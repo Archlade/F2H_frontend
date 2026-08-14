@@ -115,7 +115,13 @@ export default function HomePage() {
                     <span>{heroSection.title.split('.').slice(1).join('.').trim()}</span>
                   </>
                 ) : (
-                  <>Fresh from the farm.<br /><span>Direct to you.</span></>
+                  // The brand belongs in the H1.
+                  //
+                  // For a brand query — somebody typing "f2h" — Google looks for
+                  // the name in the title, the H1 and the body copy. It was in
+                  // the title only, and this heading is the single most weighted
+                  // piece of text on the site.
+                  <>F2H Market — fresh from the farm.<br /><span>Direct to your home.</span></>
                 )}
               </h1>
 
@@ -479,6 +485,59 @@ export default function HomePage() {
               style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: '1.5px solid rgba(255,255,255,0.3)' }}>
               <Sprout size={18} /> Become a Farmer
             </SellAsFarmerButton>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ ABOUT ═══
+          Static prose, and the reason it exists is search.
+
+          Everything above this point is rendered from API data, so a crawler
+          arriving at the homepage found almost no text — a few headings and a
+          product grid that only appears once requests resolve. Google ranks
+          pages on what they say, and the site barely said anything.
+
+          This is written for a person first: it is what the business actually
+          is, in plain terms. The brand and the phrases people search for are in
+          it because they are the true words for this, not because they were
+          sprinkled in. */}
+      <section style={{ padding: '72px 0', background: 'var(--color-gray-50)' }}>
+        <div className="container" style={{ maxWidth: 820 }}>
+          <h2 className="text-h2" style={{ marginBottom: 20 }}>
+            About F2H Market
+          </h2>
+          <div className="text-body text-muted" style={{ lineHeight: 1.8, display: 'flex', flexDirection: 'column', gap: 18 }}>
+            {/* The one place the spelling variants appear in visible copy.
+                People write the name several ways, and a reader who arrived
+                searching "farm2home" should see they are in the right place.
+                Once, in a sentence that means something — repeating them across
+                the site would be stuffing, which Google demotes for. */}
+            <p>
+              <strong>F2H Market</strong> — short for Farm to Home, and often written
+              F2H, farm2home or farmtohome — is an online grocery marketplace that
+              connects local farmers directly with households. Vegetables, fruit and
+              everyday groceries are listed by the people who actually grow them, so
+              what arrives at your door was picked on a nearby farm rather than trucked
+              through a chain of middlemen.
+            </p>
+            <p>
+              You can order a single item, fill a cart from several farms at once, or set up
+              a <Link to="/weekly-basket" style={{ color: 'var(--color-primary-700)', fontWeight: 600 }}>weekly
+              vegetable basket</Link> that arrives on the same day every week without you
+              reordering. Pause it whenever you are away.
+            </p>
+            <p>
+              Every order is <strong>cash on delivery</strong>. Nothing is charged up front
+              and no card details are stored — you pay the person who brings your groceries,
+              at your door. Farmers are paid in cash when we collect their produce, so the
+              money reaches them without waiting on a settlement cycle.
+            </p>
+            <p>
+              Browse <Link to="/products" style={{ color: 'var(--color-primary-700)', fontWeight: 600 }}>fresh
+              produce</Link>, meet the <Link to="/farmers" style={{ color: 'var(--color-primary-700)', fontWeight: 600 }}>local
+              farmers</Link> growing it, or read <Link to="/how-it-works" style={{ color: 'var(--color-primary-700)', fontWeight: 600 }}>how
+              it works</Link>.
+            </p>
           </div>
         </div>
       </section>

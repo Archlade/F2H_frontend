@@ -61,9 +61,44 @@ export default function Footer() {
           {/* Contact */}
           <div>
             <h4 style={{ color: 'white', fontWeight: 700, fontSize: '0.9375rem', marginBottom: 16 }}>Get in Touch</h4>
-            <div className="flex items-center gap-2 footer__link" style={{ padding: '4px 0' }}>
+            <a
+              href="mailto:support@creepycode.com"
+              className="flex items-center gap-2 footer__link"
+              style={{ padding: '4px 0' }}
+            >
               <Mail size={15} /> support@creepycode.com
-            </div>
+            </a>
+
+            {/*
+              The same two links declared in the Organization `sameAs` block in
+              index.html, and they need to exist in both places. `sameAs` is a
+              claim the site makes about itself; a real link on the page is the
+              corroboration. Google treats a connection asserted in one
+              direction only with noticeably less confidence, and for a brand as
+              ambiguous as "F2H" that confidence is the whole game.
+
+              `rel="me"` states authorship rather than mere reference — it is the
+              conventional way to say "this profile is also me".
+            */}
+            <a
+              href="https://share.google/2xEBxpDFisj1Gf2QD"
+              className="flex items-center gap-2 footer__link"
+              style={{ padding: '4px 0' }}
+              target="_blank"
+              rel="me noopener noreferrer"
+            >
+              <Globe size={15} /> F2H Market on Google
+            </a>
+            <a
+              href="https://www.instagram.com/farm.to.home_"
+              className="flex items-center gap-2 footer__link"
+              style={{ padding: '4px 0' }}
+              target="_blank"
+              rel="me noopener noreferrer"
+            >
+              <Share2 size={15} /> @farm.to.home_ on Instagram
+            </a>
+
             <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-500)', marginTop: 16, lineHeight: 1.6 }}>
               Monday–Saturday<br />9:00 AM – 6:00 PM IST
             </p>

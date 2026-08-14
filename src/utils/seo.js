@@ -23,6 +23,23 @@ import { useEffect } from 'react'
 const SITE = 'F2H Market'
 const ORIGIN = 'https://f2hmarket.com'
 
+/**
+ * Force a URL absolute, for structured data.
+ *
+ * Schema.org URLs must be absolute — a crawler has no page to resolve `/uploads/x.jpg`
+ * against. `mediaUrl()` returns a relative path in development, where the API
+ * origin is empty and Vite proxies everything, so image URLs would be relative
+ * in exactly the environment nobody notices and absolute in production.
+ *
+ * Always the public origin, never `window.location`: markup generated on
+ * localhost must not tell Google the image lives on localhost.
+ */
+export function absoluteUrl(path) {
+  if (!path) return null
+  if (/^https?:\/\//i.test(path)) return path
+  return ORIGIN + (path.startsWith('/') ? '' : '/') + path
+}
+
 function setMeta(selector, attr, value) {
   if (!value) return
   let el = document.head.querySelector(selector)
@@ -81,4 +98,38 @@ export function useSeo(title, description, options = {}) {
 /** Signed-in pages: correct tab title, kept out of search results. */
 export function usePrivatePageSeo(title) {
   useSeo(title, undefined, { noIndex: true })
+}
+
+/**
+ * Attach a JSON-LD block to a page, and take it away when the page unmounts.
+ *
+ * The site-wide Organization and WebSite entities live in `index.html`. This is
+ * for schema that belongs to one route — an FAQ, a breadcrumb, a product — and
+ * the removal matters: leaving a product's markup behind after navigating away
+ * would describe the *next* page as that product.
+ *
+ * `id` keeps it to one tag per kind, so a re-render replaces rather than stacks.
+ */
+export function useJsonLd(id, data) {
+  // Serialised for the dependency so a fresh object literal on every render does
+  // not tear the tag down and rebuild it each time.
+  //
+  // `data` is null while the page is still fetching, and `JSON.stringify(null)`
+  // is the *string* "null" — truthy, so a plain falsy check would emit a script
+  // tag containing the literal `null` and hand Google malformed markup.
+  const json = data == null ? null : JSON.stringify(data)
+
+  useEffect(() => {
+    if (!json) return
+    const elementId = `ld-${id}`
+    let el = document.getElementById(elementId)
+    if (!el) {
+      el = document.createElement('script')
+      el.type = 'application/ld+json'
+      el.id = elementId
+      document.head.appendChild(el)
+    }
+    el.textContent = json
+    return () => { document.getElementById(elementId)?.remove() }
+  }, [id, json])
 }

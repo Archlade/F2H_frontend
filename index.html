@@ -45,10 +45,10 @@
       from and what a link preview uses.
     -->
 
-    <title>F2H Market — Farm to Home | Fresh Groceries Delivered from Local Farmers</title>
+    <title>F2H Market — Farm to Home | Fresh Groceries Delivered</title>
     <meta
       name="description"
-      content="F2H Market delivers farm-fresh vegetables and groceries straight from local farmers to your home. Build a weekly basket, pay cash on delivery, no middlemen. Order fresh produce online today."
+      content="Farm-fresh vegetables and groceries delivered from local farmers to your home. Weekly baskets, cash on delivery, no middlemen. Order online with F2H Market."
     />
 
     <!--
@@ -59,7 +59,7 @@
     -->
     <meta
       name="keywords"
-      content="f2h market, f2h home, f2h, farm to home, farmtohome, farm2home, groceries to home, grocery delivery, fresh vegetables online, farm fresh vegetables, buy vegetables online, local farmers market, weekly vegetable basket, cash on delivery groceries, organic vegetables delivery, direct from farmer"
+      content="f2h market, f2h home, f2h, farm to home, farmtohome, farm2home, groceries to home, grocery delivery, fresh vegetables online, farm fresh vegetables, buy vegetables online, local farmers market, weekly vegetable basket, cash on delivery groceries, organic vegetables delivery, direct from farmer, farmhome, farm home, f2h farm to home, f2h groceries, f2h vegetables, farm to home delivery, f2hmarket"
     />
 
     <link rel="canonical" href="https://f2hmarket.com/" />
@@ -78,9 +78,13 @@
     <meta property="og:url" content="https://f2hmarket.com/" />
     <meta property="og:locale" content="en_IN" />
     <!-- Absolute, because a crawler has no page to resolve a relative path
-         against. 1200x630 is what the scrapers crop to. -->
-    <meta property="og:image" content="https://f2hmarket.com/f2h-logo-brand.png" />
-    <meta property="og:image:alt" content="F2H Market — Farm to Home" />
+         against. Purpose-built at 1200x630 — the logo alone is 1.83:1 and got
+         cropped or letterboxed by every scraper, which all crop to 1.91. -->
+    <meta property="og:image" content="https://f2hmarket.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:alt" content="F2H Market — farm-fresh groceries delivered to your home" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="F2H Market — Farm to Home | Fresh Groceries Delivered" />
@@ -88,7 +92,8 @@
       name="twitter:description"
       content="Farm-fresh vegetables and groceries delivered from local farmers to your door. Cash on delivery, no middlemen."
     />
-    <meta name="twitter:image" content="https://f2hmarket.com/f2h-logo-brand.png" />
+    <meta name="twitter:image" content="https://f2hmarket.com/og-image.png" />
+    <meta name="twitter:image:alt" content="F2H Market — farm-fresh groceries delivered to your home" />
 
 
     <!--
@@ -99,6 +104,39 @@
       Claims only what the code actually does: it sells groceries, in India, in
       rupees, cash on delivery. Nothing here asserts an address or opening hours,
       because inventing those is how a business gets its structured data ignored.
+
+      ── `alternateName` — where spelling variants belong ──────────────────────
+
+      People type the brand several ways: "f2h", "farm2home", "farmtohome",
+      "farm home". `alternateName` is the field designed to say "this one
+      organisation is known by all of these", and it is read as a declaration
+      rather than as content.
+
+      This is deliberately the *only* place they are all listed. The tempting
+      alternative — working every variant into headings and body copy across the
+      site — is keyword stuffing, and Google has demoted for it since the Panda
+      update in 2011. Repetition does not compound: a page saying "farm2home"
+      six times ranks no better than one saying it once, and reads worse to the
+      person who has to buy from it.
+
+      ── `sameAs` ──────────────────────────────────────────────────────────────
+
+      This is how Google is told that the website, the Google Business Profile
+      and the Instagram account are one organisation rather than three unrelated
+      things that happen to share a name. For a query as short and ambiguous as
+      "F2H" that is most of the work: Google is not deciding whether this site
+      is good, it is deciding which F2H the searcher meant.
+
+      The Instagram URL is stored without the `?utm_source=…&igsh=…` parameters
+      the share sheet appends. Those identify the share, not the profile — they
+      differ every time the link is copied, and structured data is supposed to
+      name a stable thing. `https://www.instagram.com/farm.to.home_` is the
+      profile; the rest is analytics noise.
+
+      One rule these links only pay off under: the business name, phone and
+      address on the Google Business Profile must match this site exactly. That
+      trio is what Google matches an entity on, and a differently formatted
+      phone number reads as a different company.
     -->
     <script type="application/ld+json">
       {
@@ -108,11 +146,25 @@
             "@type": "Organization",
             "@id": "https://f2hmarket.com/#organization",
             "name": "F2H Market",
-            "alternateName": ["F2H", "Farm to Home", "F2H Home"],
+            "alternateName": [
+              "F2H",
+              "F2H Home",
+              "Farm to Home",
+              "FarmToHome",
+              "Farm2Home",
+              "FarmHome",
+              "F2H Farm to Home"
+            ],
             "url": "https://f2hmarket.com/",
             "logo": "https://f2hmarket.com/f2h-logo-brand.png",
             "description": "F2H Market connects local farmers directly with households, delivering farm-fresh vegetables and groceries with no middlemen.",
-            "areaServed": { "@type": "Country", "name": "India" }
+            "areaServed": { "@type": "Country", "name": "India" },
+            "email": "support@creepycode.com",
+
+            "sameAs": [
+              "https://share.google/2xEBxpDFisj1Gf2QD",
+              "https://www.instagram.com/farm.to.home_"
+            ]
           },
           {
             "@type": "WebSite",

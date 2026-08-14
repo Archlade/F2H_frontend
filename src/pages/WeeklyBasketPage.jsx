@@ -50,7 +50,7 @@ const REASSURANCES = [
 ]
 
 export default function WeeklyBasketPage() {
-  useSeo('Weekly Vegetable Basket Delivery', 'Set up a weekly vegetable basket once and it arrives every week. Choose your produce and delivery day, pause any time, and pay cash on delivery. Groceries to home, made simple.')
+  useSeo('Weekly Vegetable Basket Delivery', 'Set up a weekly vegetable basket once and it arrives every week. Choose your produce and day, pause any time, pay cash on delivery.')
   const { isAuthenticated, user, loading } = useAuth()
 
   // Nothing is decided until the session has resolved.

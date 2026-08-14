@@ -11,7 +11,7 @@ import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import CouponField, { OrderTotals } from '../components/CouponField'
 import toast from 'react-hot-toast'
-import { useSeo } from '../utils/seo'
+import { useSeo, useJsonLd, absoluteUrl } from '../utils/seo'
 
 export default function ProductDetailPage() {
   const { id } = useParams()
@@ -51,6 +51,75 @@ export default function ProductDetailPage() {
         + 'Farm fresh, delivered to your home with cash on delivery from F2H Market.'
       : 'Fresh produce direct from local farmers, delivered to your home with cash on delivery.',
   )
+
+  /**
+   * Product structured data — the highest-value schema on the site.
+   *
+   * This is what lets Google show the price, the star rating and an in-stock
+   * badge inside the search result itself rather than a bare blue link. For
+   * "buy <vegetable> online" that is the difference between being listed and
+   * being clicked.
+   *
+   * Everything below is read off the product, never invented. A rating is only
+   * declared when reviews actually exist — `aggregateRating` with zero reviews
+   * is the single most common reason Google rejects Product markup, and a
+   * rejection costs the rest of the block with it.
+   */
+  useJsonLd('product-schema', product ? {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    description: product.description
+      || `Fresh ${product.name} from ${product.farmer?.farm_name || 'a local farm'}, delivered to your home.`,
+    image: (product.images || []).map(i => absoluteUrl(mediaUrl(i.image_url))).filter(Boolean),
+    category: product.category?.name,
+    brand: {
+      '@type': 'Brand',
+      name: product.farmer?.farm_name || 'F2H Market',
+    },
+    offers: {
+      '@type': 'Offer',
+      url: `https://f2hmarket.com/products/${product.id}`,
+      priceCurrency: 'INR',
+      price: (product.effective_price ?? product.price)?.toFixed?.(2),
+      availability: product.stock_status === 'out_of_stock'
+        ? 'https://schema.org/OutOfStock'
+        : 'https://schema.org/InStock',
+      // Cash on delivery — declared so the result does not imply card checkout.
+      acceptedPaymentMethod: {
+        '@type': 'PaymentMethod',
+        name: 'Cash on Delivery',
+      },
+      seller: { '@type': 'Organization', name: 'F2H Market' },
+    },
+    ...(product.rating_count > 0 ? {
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: Number(product.rating_avg).toFixed(1),
+        reviewCount: product.rating_count,
+      },
+    } : {}),
+  } : null)
+
+  // Breadcrumbs turn the raw URL under a search result into a readable path —
+  // "Products › Vegetables › Tomatoes" instead of f2hmarket.com/products/41.
+  useJsonLd('breadcrumb-schema', product ? {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://f2hmarket.com/' },
+      { '@type': 'ListItem', position: 2, name: 'Products', item: 'https://f2hmarket.com/products' },
+      ...(product.category?.name
+        ? [{ '@type': 'ListItem', position: 3, name: product.category.name }]
+        : []),
+      {
+        '@type': 'ListItem',
+        position: product.category?.name ? 4 : 3,
+        name: product.name,
+        item: `https://f2hmarket.com/products/${product.id}`,
+      },
+    ],
+  } : null)
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -190,7 +259,15 @@ export default function ProductDetailPage() {
                   border: `2px solid ${i === currentImage ? 'var(--color-primary-500)' : 'transparent'}`,
                   cursor: 'pointer', padding: 0, background: 'none',
                 }}>
-                  <img src={mediaUrl(img.image_url)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  {/* Named, not empty. A cover photo beside a heading is
+                      decorative and correctly takes alt="", but a product photo
+                      is content — it is what Google Images indexes, and for
+                      produce that is a real way people arrive. */}
+                  <img
+                    src={mediaUrl(img.image_url)}
+                    alt={`${product.name} from ${product.farmer?.farm_name || 'a local farm'}`}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
                 </button>
               ))}
             </div>

@@ -29,7 +29,7 @@ function SkeletonCard() {
 }
 
 export default function ProductsPage() {
-  useSeo('Fresh Vegetables & Groceries Online', 'Browse farm-fresh vegetables, fruit and groceries from local farmers. Compare prices, see what is in season, and get it delivered to your home with cash on delivery.')
+  useSeo('Fresh Vegetables & Groceries Online', 'Browse farm-fresh vegetables, fruit and groceries from local farmers near you. Delivered to your home, paid in cash at the door.')
   const [searchParams, setSearchParams] = useSearchParams()
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
@@ -179,10 +179,16 @@ export default function ProductsPage() {
   return (
     <div className="container section-sm products-page">
       {/* Header */}
+      {/* The H1 and the line under it are the only text a crawler reliably
+          sees on this page — everything else is a product grid that appears
+          after the API responds. Written for a reader, but it is also what this
+          page is judged on for "buy vegetables online". */}
       <div style={{ marginBottom: 28 }}>
-        <h1 className="text-h1">Fresh Products</h1>
-        <p className="text-muted" style={{ marginTop: 6 }}>
-          {total > 0 ? `${total} products available near you` : 'Discovering fresh products...'}
+        <h1 className="text-h1">Fresh Vegetables &amp; Groceries Online</h1>
+        <p className="text-muted" style={{ marginTop: 6, maxWidth: 640, lineHeight: 1.7 }}>
+          Buy farm-fresh produce direct from local farmers on F2H Market — picked on
+          nearby farms, delivered to your home, and paid for in cash at your door.
+          {total > 0 ? ` ${total} products available near you.` : ''}
         </p>
       </div>
 
@@ -302,6 +308,34 @@ export default function ProductsPage() {
           )}
         </div>
       </div>
+
+      {/* Closing copy.
+          This page was 48 words of static text — a heading and a count. The
+          grid above it is all API data, so there was almost nothing for a
+          search engine to weigh, and "buy vegetables online" is a competitive
+          phrase to win on a heading alone. Written to be worth reading; it
+          earns its place either way. */}
+      <section style={{ marginTop: 56, paddingTop: 40, borderTop: '1px solid var(--color-gray-200)' }}>
+        <h2 className="text-h3" style={{ marginBottom: 14 }}>Buying fresh produce online</h2>
+        <div className="text-sm text-muted" style={{ lineHeight: 1.8, maxWidth: 760, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <p>
+            Everything listed here comes from a farm near you, priced by the person who
+            grew it. Because there is no distributor in between, produce reaches your
+            door in days rather than weeks — and the farmer keeps more of what you pay.
+          </p>
+          <p>
+            Order a single item, or add several to your cart and check out in one go —
+            the ₹300 minimum applies to your basket, not to each product, so you can mix
+            vegetables from different farms freely. If you buy the same things every
+            week, a <Link to="/weekly-basket" style={{ color: 'var(--color-primary-700)', fontWeight: 600 }}>weekly
+            basket</Link> saves you reordering.
+          </p>
+          <p>
+            Every order is cash on delivery. You pay when your groceries arrive, so
+            nothing leaves your pocket before the produce is in your hands.
+          </p>
+        </div>
+      </section>
     </div>
   )
 }

@@ -1,7 +1,7 @@
-import { CheckCircle, Leaf, Truck, Package, MessageCircle, Star, ArrowRight } from 'lucide-react'
+import { CheckCircle, Leaf, Truck, Package, Star, ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import SellAsFarmerButton from '../components/SellAsFarmerButton'
-import { useSeo } from '../utils/seo'
+import { useSeo, useJsonLd } from '../utils/seo'
 
 const steps = [
   {
@@ -17,8 +17,8 @@ const steps = [
     desc: 'The farmer reviews your request and either accepts or provides an alternative. You\'ll get notified instantly either way.',
   },
   {
-    number: '04', title: 'Chat & Confirm', emoji: '💬',
-    desc: 'Once accepted, a private chat opens between you and the farmer. Coordinate details, ask questions, confirm the order.',
+    number: '04', title: 'Farmer Confirms', emoji: '✅',
+    desc: 'The farmer sets your produce aside and confirms the order. From this point the total is fixed and your delivery day is set.',
   },
   {
     number: '05', title: 'Receive Fresh Food', emoji: '📦',
@@ -26,8 +26,63 @@ const steps = [
   },
 ]
 
+/**
+ * Answers, shared by the visible FAQ and the FAQPage structured data below.
+ *
+ * One source deliberately: Google requires the markup to match the text a
+ * visitor actually sees, and maintaining two copies is how they stop matching.
+ */
+const FAQS = [
+  {
+    q: 'Is F2H Market free to use?',
+    a: 'Yes. Signing up and browsing is free. You only pay for the groceries you order, in cash when they are delivered.',
+  },
+  {
+    q: 'How do I pay for my order?',
+    a: 'Every order is cash on delivery. Nothing is charged up front and no card details are stored — you pay our delivery person in cash at your door.',
+  },
+  {
+    q: 'What is a weekly basket?',
+    a: 'A standing order of the vegetables your household uses each week. You choose the produce and a delivery day once, and it arrives every week without reordering. You can change it, pause it while you are away, or stop it whenever you like.',
+  },
+  {
+    q: 'Is there a minimum order?',
+    a: 'Yes, ₹300. You can reach it with a single product or by adding several items from different farms to your cart.',
+  },
+  {
+    q: 'How do I know the farmers are genuine?',
+    a: 'Every farm is verified by our team before it can sell, and verified farms carry a badge on their profile. You can see who grew your food and read reviews from other customers.',
+  },
+  {
+    q: 'Can I cancel an order?',
+    a: 'You can cancel any time before the farmer confirms it. After that the produce has been set aside for you, so cancelling is no longer one-sided — contact us and we will sort it out with the farm.',
+  },
+  {
+    q: 'Where does F2H Market deliver?',
+    a: 'Deliveries run wherever we have farms nearby. Enter your address at checkout and the site will show you the farms that can reach you.',
+  },
+  {
+    q: 'What if something is wrong with my order?',
+    a: 'Leave a review on the product or farm, and email support@creepycode.com. Because you pay at the door, you can raise a problem before any money changes hands.',
+  },
+]
+
 export default function HowItWorksPage() {
-  useSeo('How It Works', 'How F2H Market works: order farm-fresh groceries from local farmers, pay cash on delivery, and get produce picked the morning it ships. No subscriptions, no card needed.')
+  useSeo('How It Works', 'How F2H Market works: order farm-fresh groceries from local farmers and pay cash on delivery. No cards, no subscriptions, no middlemen.')
+
+  // FAQ rich results. Google can show these answers directly beneath the
+  // listing, which takes up more of the page and answers the question before
+  // anyone clicks. Built from FAQS so the markup always matches what is on
+  // screen — mismatched FAQ markup is ignored at best.
+  useJsonLd('faq-schema', {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQS.map(({ q, a }) => ({
+      '@type': 'Question',
+      name: q,
+      acceptedAnswer: { '@type': 'Answer', text: a },
+    })),
+  })
   return (
     <div>
       {/* Hero */}
@@ -93,12 +148,7 @@ export default function HowItWorksPage() {
         <div className="container" style={{ maxWidth: 720 }}>
           <h2 className="text-h2" style={{ marginBottom: 40, textAlign: 'center' }}>Frequently Asked Questions</h2>
           {[
-            { q: 'Is F2H free to use?', a: 'Signing up and browsing is completely free. You only pay for the products you purchase directly from farmers.' },
-            { q: 'How do I know farmers are trustworthy?', a: 'All farmers go through a verification process by our admin team. Verified badges are prominently displayed on farmer profiles.' },
-            { q: 'What payment methods are supported?', a: 'Payment details are coordinated directly between you and the farmer through our chat feature after a request is accepted.' },
-            { q: 'Can I cancel a request?', a: 'Yes, you can cancel a pending request before the farmer accepts it. Once accepted and chat has started, please coordinate with the farmer.' },
-            { q: 'How do farmers set their location?', a: 'Farmers set their farm location when registering or updating their profile. Customers are shown products sorted by proximity.' },
-            { q: 'What if I\'m not happy with my order?', a: 'You can leave a review and contact our support team. We take quality and trust seriously on our platform.' },
+            ...FAQS,
           ].map(({ q, a }) => (
             <details key={q} style={{
               background: 'white', borderRadius: 'var(--radius-xl)', marginBottom: 12,

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { Search } from 'lucide-react'
 import { farmersAPI } from '../api'
 import FarmerCard from '../components/FarmerCard'
@@ -40,9 +41,12 @@ export default function FarmersPage() {
   return (
     <div className="container section-sm">
       <div style={{ marginBottom: 40 }}>
-        <h1 className="text-h1">Local Farmers</h1>
-        <p className="text-muted" style={{ marginTop: 8 }}>
-          Discover {total}+ farmers growing fresh food near you
+        <h1 className="text-h1">Local Farmers Near You</h1>
+        <p className="text-muted" style={{ marginTop: 8, maxWidth: 640, lineHeight: 1.7 }}>
+          Meet the farms growing your food. Every farm on F2H Market is verified before
+          it can sell, so you can see exactly who grew what arrives at your door — and
+          buy from them directly, with no middlemen.
+          {total > 0 ? ` ${total} farms listed.` : ''}
         </p>
       </div>
 
@@ -78,6 +82,29 @@ export default function FarmersPage() {
           <p>Try a different search or check back soon!</p>
         </div>
       )}
+
+      {/* 15 static words before this — the thinnest public page on the site. */}
+      <section style={{ marginTop: 56, paddingTop: 40, borderTop: '1px solid var(--color-gray-200)' }}>
+        <h2 className="text-h3" style={{ marginBottom: 14 }}>Buying direct from local farmers</h2>
+        <div className="text-sm text-muted" style={{ lineHeight: 1.8, maxWidth: 760, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <p>
+            Most vegetables travel through several hands before they reach a shelf, and
+            each one takes a margin. On F2H Market you buy from the farm itself — you can
+            see who grew your food, what else they have, and what other customers said
+            about them.
+          </p>
+          <p>
+            Every farm here is verified by our team before it can sell, and verified farms
+            carry a badge on their profile. Farmers are paid in cash when we collect their
+            produce, so the money reaches them without waiting on a settlement cycle.
+          </p>
+          <p>
+            Open any farm to see what it has in stock today, or browse{' '}
+            <Link to="/products" style={{ color: 'var(--color-primary-700)', fontWeight: 600 }}>all
+            fresh produce</Link> across every farm at once.
+          </p>
+        </div>
+      </section>
     </div>
   )
 }
