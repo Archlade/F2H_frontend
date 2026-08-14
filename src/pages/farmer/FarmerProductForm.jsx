@@ -160,7 +160,7 @@ const FarmerProductForm = () => {
           <div className="flex gap-4 flex-wrap">
             {formData.images?.map((url, i) => (
               <div key={i} className="relative w-24 h-24 border rounded overflow-hidden">
-                <img src={url} alt={`Preview ${i}`} className="w-full h-full object-cover" />
+                <img src={mediaUrl(url)} alt={`Preview ${i}`} className="w-full h-full object-cover" />
                 <button type="button" onClick={() => removeImage(i)} className="absolute top-1 right-1 bg-white rounded-full p-1 shadow hover:text-red-500"><X size={14}/></button>
               </div>
             ))}

@@ -1,3 +1,5 @@
+import { mediaUrl } from '../utils/image'
+
 /**
  * Shows a user's photo when they have one, falling back to their initials.
  * Sizes match the .avatar-placeholder helpers in index.css.
@@ -20,7 +22,12 @@ export default function UserAvatar({ user, src, size = 'md', className = '', sty
   if (url) {
     return (
       <img
-        src={url}
+        // Resolved against the API origin. A stored avatar is a relative path
+        // like /uploads/avatars/x.jpg; in development the Vite proxy makes that
+        // work, but in production the site is on f2hmarket.com and the file is
+        // on api.f2hmarket.com, so a raw src is a broken image everywhere a
+        // person's photo appears.
+        src={mediaUrl(url)}
         alt={user?.full_name || 'Profile photo'}
         className={className}
         style={{ ...base, objectFit: 'cover', display: 'block' }}

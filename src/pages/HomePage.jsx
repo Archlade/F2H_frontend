@@ -11,6 +11,7 @@ import ProductCard from '../components/ProductCard'
 import FarmerCard from '../components/FarmerCard'
 import SellAsFarmerButton from '../components/SellAsFarmerButton'
 import toast from 'react-hot-toast'
+import { useSeo } from '../utils/seo'
 
 const CATEGORY_ICONS = {
   Vegetables: Leaf, Fruits: Apple, Dairy: Milk, Eggs: Egg,
@@ -33,6 +34,7 @@ function SkeletonCard() {
 }
 
 export default function HomePage() {
+  useSeo(null, 'Buy farm-fresh vegetables and groceries online from local farmers near you. Weekly baskets, cash on delivery, no middlemen. F2H Market delivers farm to home.')
   const { user, isAuthenticated } = useAuth()
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')

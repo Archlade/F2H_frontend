@@ -52,7 +52,9 @@ export default function AdminDashboard() {
     { label: 'requests awaiting review', count: data.pending_requests, to: '/admin/requests', icon: ShoppingCart },
     { label: 'farms awaiting verification', count: data.pending_farmers, to: '/admin/farmers', icon: BadgeCheck },
     { label: 'products awaiting approval', count: data.pending_products, to: '/admin/products', icon: Package },
-    { label: 'baskets awaiting approval', count: data.pending_packs, to: '/admin/family-packs', icon: Boxes },
+    // Weekly baskets waiting on an admin, not curated packs — the packs
+    // feature is gone and its screen with it.
+    { label: 'baskets awaiting approval', count: data.pending_baskets, to: '/admin/baskets', icon: Boxes },
     { label: 'reviews awaiting approval', count: data.pending_reviews, to: '/admin/reviews', icon: Star },
     { label: 'reports to resolve', count: data.pending_reports, to: '/admin/reports', icon: AlertTriangle },
   ].filter((q) => Number(q.count) > 0);

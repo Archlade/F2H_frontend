@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { requestsAPI, toList } from '../../api';
-import { MessageSquare, Loader, FileText } from 'lucide-react';
+import { Loader, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import OrderPrice from '../../components/OrderPrice';
 import CashOnDelivery from '../../components/CashOnDelivery';
@@ -95,11 +95,6 @@ const CustomerRequests = ({ side, title = 'Purchase Requests' }) => {
                     <span className={`badge status-${req.status} capitalize px-2 py-1 rounded text-xs`}>{req.status?.replace('_', ' ')}</span>
                   </td>
                   <td className="p-3" data-label="Actions">
-                    {['chat_active', 'accepted', 'completed', 'preparing', 'ready_for_pickup', 'out_for_delivery'].includes(req.status) && (
-                      <Link to={`/dashboard/chat/${req.chat_id || req.id}`} className="btn btn-sm btn-primary inline-flex items-center gap-1 touch-target">
-                        <MessageSquare size={14} /> Open Chat
-                      </Link>
-                    )}
                   </td>
                 </tr>
               ))}

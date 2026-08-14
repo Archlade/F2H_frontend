@@ -25,13 +25,33 @@ const FarmerInventory = () => {
   }, []);
 
   const handleSave = async (id) => {
+    // `Number('')` is 0, not NaN.
+    //
+    // So clearing the box and hitting save silently set the product's stock to
+    // zero — which delists it from the shop and cancels nothing, it just stops
+    // selling. A farmer who meant to retype a number and mistyped instead lost
+    // the listing with a cheerful "Inventory updated" toast.
+    const raw = String(editVal).trim();
+    const qty = Number(raw);
+
+    if (raw === '' || Number.isNaN(qty)) {
+      toast.error('Enter a quantity');
+      return;
+    }
+    if (qty < 0) {
+      toast.error('Quantity cannot be negative');
+      return;
+    }
+
     try {
-      await productsAPI.update(id, { available_quantity: Number(editVal) });
-      toast.success('Inventory updated');
-      setProducts(products.map(p => p.id === id ? { ...p, available_quantity: Number(editVal) } : p));
+      await productsAPI.update(id, { available_quantity: qty });
+      toast.success(qty === 0 ? 'Marked out of stock' : 'Inventory updated');
+      setProducts(products.map(p => p.id === id ? { ...p, available_quantity: qty } : p));
       setEditingId(null);
     } catch (err) {
-      toast.error('Failed to update');
+      // The server's message, not a generic one — it knows things the form
+      // does not, such as stock already committed to a confirmed order.
+      toast.error(err.response?.data?.error || 'Failed to update');
     }
   };
 
@@ -71,7 +91,19 @@ const FarmerInventory = () => {
                     <td className="p-4" data-label="Available Qty">
                       {editingId === p.id ? (
                         <div className="flex items-center gap-2">
-                          <input type="number" value={editVal} onChange={e => setEditVal(e.target.value)} className="w-20 border rounded p-1 text-sm touch-target" autoFocus />
+                          <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            value={editVal}
+                            onChange={e => setEditVal(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') handleSave(p.id)
+                              if (e.key === 'Escape') setEditingId(null)
+                            }}
+                            className="w-20 border rounded p-1 text-sm touch-target"
+                            autoFocus
+                          />
                           <button onClick={() => handleSave(p.id)} className="text-green-600 p-1 hover:bg-green-50 rounded touch-target"><Check size={18}/></button>
                         </div>
                       ) : (

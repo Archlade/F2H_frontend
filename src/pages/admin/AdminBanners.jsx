@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { mediaUrl, IMAGE_ACCEPT } from '../../utils/image'
 import toast from 'react-hot-toast'
 
-import { bannersAPI, uploadsAPI, productsAPI, farmersAPI, categoriesAPI, familyPacksAPI, toList } from '../../api'
+import { bannersAPI, uploadsAPI, productsAPI, farmersAPI, categoriesAPI, toList } from '../../api'
 
 // Must match AdBannerCarousel.aspectRatio in the app. The preview below is
 // exactly this shape, because the whole point of a preview is that art which
@@ -20,10 +20,12 @@ const TARGET_TYPES = [
 
 // Which target types need something picked from a list, and where that list
 // comes from. Keyed by target_type so the form has no branching per type.
+// `family_pack` is gone with the feature. Banners already pointing at one still
+// carry that target_type in the database — the form shows the raw value rather
+// than a picker, and the banner keeps working until an admin repoints it.
 const PICKERS = {
   product: { label: 'Product', load: () => productsAPI.list({ per_page: 100 }), name: (r) => r.name },
   farmer: { label: 'Farm', load: () => farmersAPI.list({ per_page: 100 }), name: (r) => r.farm_name || r.full_name },
-  family_pack: { label: 'Family pack', load: () => familyPacksAPI.list({ per_page: 100 }), name: (r) => r.name },
   category: { label: 'Category', load: () => categoriesAPI.list(), name: (r) => r.name },
 }
 

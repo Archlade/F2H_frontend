@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react'
 import { Search } from 'lucide-react'
 import { farmersAPI } from '../api'
 import FarmerCard from '../components/FarmerCard'
+import { useSeo } from '../utils/seo'
 
 export default function FarmersPage() {
+  useSeo('Local Farmers Near You', 'Meet the local farmers growing your food. Browse verified farms near you on F2H Market and order fresh produce direct, with no middlemen taking a cut.')
   const [farmers, setFarmers] = useState([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)

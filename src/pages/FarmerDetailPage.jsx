@@ -4,11 +4,25 @@ import { useParams, Link } from 'react-router-dom'
 import { MapPin, Star, BadgeCheck, Package, Calendar, Tractor, Maximize2, X } from 'lucide-react'
 import { farmersAPI, productsAPI, reviewsAPI, locationsAPI } from '../api'
 import ProductCard from '../components/ProductCard'
+import { useSeo } from '../utils/seo'
 
 export default function FarmerDetailPage() {
   const { id } = useParams()
   const [farmer, setFarmer] = useState(null)
   const [products, setProducts] = useState([])
+
+  // Named apart from the `fp` further down, which is declared after the early
+  // returns — a hook cannot live down there, so this needs its own binding
+  // rather than reusing that one.
+  const seoFarm = farmer?.farmer_profile || farmer
+  useSeo(
+    seoFarm?.farm_name ? `${seoFarm.farm_name} — Local Farm` : 'Local Farm',
+    seoFarm?.farm_name
+      ? `Buy fresh produce direct from ${seoFarm.farm_name} on F2H Market. `
+        + (seoFarm.bio ? `${seoFarm.bio} ` : '')
+        + 'Farm to home delivery with cash on delivery, no middlemen.'
+      : 'Buy fresh produce direct from local farms on F2H Market, with cash on delivery.',
+  )
   const [reviews, setReviews] = useState([])
   const [loading, setLoading] = useState(true)
   const [mapExpanded, setMapExpanded] = useState(false)

@@ -30,7 +30,6 @@ import CustomerNotifications from './pages/customer/CustomerNotifications'
 import CustomerReviews from './pages/customer/CustomerReviews'
 import CustomerFamilyPackOrders from './pages/customer/CustomerFamilyPackOrders'
 import CustomerFamilyPackBuilder from './pages/customer/CustomerFamilyPackBuilder'
-import ChatPage from './pages/ChatPage'
 
 // Farmer pages
 import FarmerDashboard from './pages/farmer/FarmerDashboard'
@@ -43,8 +42,6 @@ import FarmerAnalytics from './pages/farmer/FarmerAnalytics'
 import FarmerProfile from './pages/farmer/FarmerProfile'
 import FarmerInventory from './pages/farmer/FarmerInventory'
 import FarmerNotifications from './pages/farmer/FarmerNotifications'
-import FarmerFamilyPacks from './pages/farmer/FarmerFamilyPacks'
-import FarmerFamilyPackForm from './pages/farmer/FarmerFamilyPackForm'
 import FarmerFamilyPackOrders from './pages/farmer/FarmerFamilyPackOrders'
 import FarmerSubscriptions from './pages/farmer/FarmerSubscriptions'
 
@@ -67,7 +64,6 @@ import AdminBanners from './pages/admin/AdminBanners'
 import AdminAuditLogs from './pages/admin/AdminAuditLogs'
 import AdminAnnouncements from './pages/admin/AdminAnnouncements'
 import AdminAnalytics from './pages/admin/AdminAnalytics'
-import AdminFamilyPacks from './pages/admin/AdminFamilyPacks'
 import AdminBaskets from './pages/admin/AdminBaskets'
 
 
@@ -147,8 +143,6 @@ export default function App() {
           <Route path="family-pack/new" element={<CustomerFamilyPackBuilder />} />
           <Route path="family-pack/:id/edit" element={<CustomerFamilyPackBuilder />} />
           <Route path="favorites" element={<CustomerFavorites />} />
-          <Route path="chat" element={<ChatPage />} />
-          <Route path="chat/:chatId" element={<ChatPage />} />
           <Route path="notifications" element={<CustomerNotifications />} />
           <Route path="reviews" element={<CustomerReviews />} />
           <Route path="addresses" element={<CustomerAddresses />} />
@@ -165,9 +159,6 @@ export default function App() {
           <Route path="products" element={<FarmerProducts />} />
           <Route path="products/new" element={<FarmerProductForm />} />
           <Route path="products/:id/edit" element={<FarmerProductForm />} />
-          <Route path="family-packs" element={<FarmerFamilyPacks />} />
-          <Route path="family-packs/new" element={<FarmerFamilyPackForm />} />
-          <Route path="family-packs/:id/edit" element={<FarmerFamilyPackForm />} />
           <Route path="family-pack-orders" element={<FarmerFamilyPackOrders />} />
           {/* Baskets containing this farmer's produce — the supply side. */}
           <Route path="subscriptions" element={<FarmerSubscriptions />} />
@@ -194,8 +185,6 @@ export default function App() {
           {/* What this farmer has bought from other farms, kept apart from
               the selling screens above. */}
           <Route path="purchases" element={<FarmerPurchases />} />
-          <Route path="chat" element={<ChatPage />} />
-          <Route path="chat/:chatId" element={<ChatPage />} />
           <Route path="analytics" element={<FarmerAnalytics />} />
           <Route path="profile" element={<FarmerProfile />} />
           <Route path="notifications" element={<FarmerNotifications />} />
@@ -211,7 +200,6 @@ export default function App() {
           <Route path="users" element={<AdminUsers />} />
           <Route path="farmers" element={<AdminFarmers />} />
           <Route path="products" element={<AdminProducts />} />
-          <Route path="family-packs" element={<AdminFamilyPacks />} />
           {/* Parity with admin_baskets_screen.dart in the app. */}
           <Route path="baskets" element={<AdminBaskets />} />
           <Route path="categories" element={<AdminCategories />} />

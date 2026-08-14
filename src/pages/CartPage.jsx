@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 
 import { locationsAPI, toList } from '../api'
 import { useCart } from '../context/CartContext'
+import { useSeo } from '../utils/seo'
 
 /**
  * The cart, and checking out.
@@ -21,6 +22,7 @@ import { useCart } from '../context/CartContext'
  *   discovered at the end.
  */
 export default function CartPage() {
+  useSeo('Your Cart', 'Review your basket of farm-fresh groceries and check out with cash on delivery.')
   const { cart, loading, updateItem, removeItem, checkout } = useCart()
   const navigate = useNavigate()
 

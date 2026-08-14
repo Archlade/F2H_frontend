@@ -165,6 +165,10 @@ export const farmersAPI = {
   get: (id) => api.get(`/farmers/${id}`),
   updateProfile: (data) => api.put('/farmers/profile', data),
   getDashboardStats: () => api.get('/farmers/dashboard/stats'),
+  // Real series for the charts: six months of orders and revenue, plus the
+  // farmer's best sellers. The analytics page rendered hardcoded numbers before
+  // this existed.
+  getDashboardAnalytics: () => api.get('/farmers/dashboard/analytics'),
 }
 
 // ─── Requests ────────────────────────────────────────────────
@@ -173,14 +177,6 @@ export const requestsAPI = {
   list: (params) => api.get('/requests', { params }),
   get: (id) => api.get(`/requests/${id}`),
   updateStatus: (id, data) => api.patch(`/requests/${id}/status`, data),
-}
-
-// ─── Chat ────────────────────────────────────────────────────
-export const chatAPI = {
-  list: () => api.get('/chats'),
-  get: (id) => api.get(`/chats/${id}`),
-  getMessages: (id, params) => api.get(`/chats/${id}/messages`, { params }),
-  sendMessage: (id, data) => api.post(`/chats/${id}/messages`, data),
 }
 
 // ─── Notifications ───────────────────────────────────────────
@@ -306,8 +302,6 @@ export const adminAPI = {
   createAnnouncement: (data) => api.post('/admin/announcements', data),
   getAnnouncements: () => api.get('/admin/announcements'),
   createCategory: (data) => api.post('/admin/categories', data),
-  familyPacks: (params) => api.get('/admin/family-packs', { params }),
-  approveFamilyPack: (id) => api.patch(`/admin/family-packs/${id}/approve`),
   familyPackOrders: (params) => api.get('/admin/family-pack-orders', { params }),
 
   // Every order in the platform, both kinds, merged and newest first.
@@ -326,16 +320,6 @@ export const adminAPI = {
   updateCoupon: (id, data) => api.put(`/admin/coupons/${id}`, data),
   deleteCoupon: (id) => api.delete(`/admin/coupons/${id}`),
   couponRedemptions: (params) => api.get('/admin/coupon-redemptions', { params }),
-}
-
-// ─── Family Packs ────────────────────────────────────────────
-export const familyPacksAPI = {
-  list: (params) => api.get('/family-packs', { params }),
-  get: (id) => api.get(`/family-packs/${id}`),
-  create: (data) => api.post('/family-packs', data),
-  update: (id, data) => api.put(`/family-packs/${id}`, data),
-  delete: (id) => api.delete(`/family-packs/${id}`),
-  myPacks: (params) => api.get('/family-packs/my-packs', { params }),
 }
 
 // ─── Family Pack Subscriptions (weekly baskets) ──────────────

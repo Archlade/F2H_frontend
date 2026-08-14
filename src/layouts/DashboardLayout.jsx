@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import UserAvatar from '../components/UserAvatar'
 import {
-  LayoutDashboard, ShoppingBag, Heart, MessageCircle,
+  LayoutDashboard, ShoppingBag, Heart,
   Bell, Star, MapPin, User, LogOut, Package,
   Tractor, BarChart2, Boxes, FileText, Plus, Menu, X, ChevronRight, ChevronLeft, Repeat,
   ShoppingCart
@@ -10,13 +10,13 @@ import {
 import { useAuth } from '../context/AuthContext'
 import MobileBottomNav from '../components/MobileBottomNav'
 import toast from 'react-hot-toast'
+import { usePrivatePageSeo } from '../utils/seo'
 
 const customerNav = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/dashboard/requests', label: 'Requests', icon: FileText },
   { to: '/dashboard/orders', label: 'Orders', icon: Package },
   { to: '/dashboard/family-pack-orders', label: 'Weekly Basket', icon: Boxes },
-  { to: '/dashboard/chat', label: 'Messages', icon: MessageCircle },
   { to: '/dashboard/favorites', label: 'Favorites', icon: Heart },
   { to: '/dashboard/notifications', label: 'Notifications', icon: Bell },
   { to: '/dashboard/reviews', label: 'My Reviews', icon: Star },
@@ -27,7 +27,6 @@ const customerNav = [
 const farmerNav = [
   { to: '/farmer', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/farmer/products', label: 'My Products', icon: ShoppingBag },
-  { to: '/farmer/family-packs', label: 'Family Packs', icon: Boxes },
   // Renamed: this is the supply side — baskets containing this farm's produce.
   // A farmer's own basket lives under the buying group below, and two entries
   // both called "Weekly Baskets" would be indistinguishable.
@@ -41,7 +40,6 @@ const farmerNav = [
   // opposite actions (accept/reject vs cancel).
   { to: '/farmer/purchases', label: 'My Purchases', icon: ShoppingCart },
   { to: '/farmer/my-basket', label: 'My Weekly Basket', icon: Boxes },
-  { to: '/farmer/chat', label: 'Messages', icon: MessageCircle },
   { to: '/farmer/analytics', label: 'Analytics', icon: BarChart2 },
   { to: '/farmer/notifications', label: 'Notifications', icon: Bell },
   { to: '/farmer/profile', label: 'Farm Profile', icon: Tractor },
@@ -49,6 +47,7 @@ const farmerNav = [
 
 
 export default function DashboardLayout({ role }) {
+  usePrivatePageSeo('My Account')
   const { user, logout, unreadNotifications } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()

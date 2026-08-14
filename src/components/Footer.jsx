@@ -62,7 +62,7 @@ export default function Footer() {
           <div>
             <h4 style={{ color: 'white', fontWeight: 700, fontSize: '0.9375rem', marginBottom: 16 }}>Get in Touch</h4>
             <div className="flex items-center gap-2 footer__link" style={{ padding: '4px 0' }}>
-              <Mail size={15} /> support@f2h.market
+              <Mail size={15} /> support@creepycode.com
             </div>
             <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-500)', marginTop: 16, lineHeight: 1.6 }}>
               Monday–Saturday<br />9:00 AM – 6:00 PM IST

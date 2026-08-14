@@ -97,10 +97,10 @@ function PackPurchases() {
     return (
       <div className="empty-state">
         <div className="empty-state__icon"><Package size={28} /></div>
-        <h3>No pack purchases yet</h3>
-        <p>Family packs and weekly baskets you order from other farms appear here.</p>
-        <Link to="/family-packs" className="btn btn-primary" style={{ marginTop: 8 }}>
-          Browse family packs
+        <h3>No basket deliveries yet</h3>
+        <p>Weekly basket deliveries you order for your own household appear here.</p>
+        <Link to="/weekly-basket" className="btn btn-primary" style={{ marginTop: 8 }}>
+          Set up a weekly basket
         </Link>
       </div>
     )

@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { basketPaths } from '../utils/basketPaths'
+import { useSeo } from '../utils/seo'
 
 /**
  * The public front door to weekly baskets.
@@ -49,6 +50,7 @@ const REASSURANCES = [
 ]
 
 export default function WeeklyBasketPage() {
+  useSeo('Weekly Vegetable Basket Delivery', 'Set up a weekly vegetable basket once and it arrives every week. Choose your produce and delivery day, pause any time, and pay cash on delivery. Groceries to home, made simple.')
   const { isAuthenticated, user, loading } = useAuth()
 
   // Nothing is decided until the session has resolved.

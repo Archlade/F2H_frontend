@@ -10,6 +10,7 @@ import {
 import { useAuth } from '../context/AuthContext'
 import MobileBottomNav from '../components/MobileBottomNav'
 import toast from 'react-hot-toast'
+import { usePrivatePageSeo } from '../utils/seo'
 
 const adminNav = [
   { section: 'Overview' },
@@ -19,7 +20,6 @@ const adminNav = [
   { to: '/admin/users', label: 'Users', icon: Users },
   { to: '/admin/farmers', label: 'Farmers', icon: Tractor },
   { to: '/admin/products', label: 'Products', icon: ShoppingBag },
-  { to: '/admin/family-packs', label: 'Family Packs', icon: Boxes },
   { to: '/admin/baskets', label: 'Weekly Baskets', icon: Repeat },
   { to: '/admin/categories', label: 'Categories', icon: Tag },
   { to: '/admin/coupons', label: 'Coupons', icon: Ticket },
@@ -39,6 +39,7 @@ const adminNav = [
 ]
 
 export default function AdminLayout() {
+  usePrivatePageSeo('Admin')
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()

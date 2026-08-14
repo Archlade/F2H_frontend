@@ -11,6 +11,7 @@ import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import CouponField, { OrderTotals } from '../components/CouponField'
 import toast from 'react-hot-toast'
+import { useSeo } from '../utils/seo'
 
 export default function ProductDetailPage() {
   const { id } = useParams()
@@ -37,6 +38,19 @@ export default function ProductDetailPage() {
   const [addingToCart, setAddingToCart] = useState(false)
   const { addItem } = useCart()
   const [coupon, setCoupon] = useState(null)
+
+  // The page that can rank for "buy <vegetable> online" — it needs the produce
+  // name in the title, not the site name. Falls back to a generic line while
+  // the fetch is in flight, since a title of "undefined" is what gets indexed
+  // if the crawler snapshots too early.
+  useSeo(
+    product ? `${product.name} — Buy Fresh Online` : 'Fresh Produce',
+    product
+      ? `Buy ${product.name} online from ${product.farmer?.farm_name || 'a local farm'} at `
+        + `₹${(product.effective_price ?? product.price)?.toFixed?.(2)} per ${product.unit}. `
+        + 'Farm fresh, delivered to your home with cash on delivery from F2H Market.'
+      : 'Fresh produce direct from local farmers, delivered to your home with cash on delivery.',
+  )
 
   useEffect(() => {
     const fetchAll = async () => {

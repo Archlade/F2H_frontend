@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The static pages. Product and farm pages are not listed here because they
+  change as farmers add and delist stock, and a sitemap full of URLs that 404
+  is worse than a short accurate one — Google downgrades its trust in the whole
+  file.
+
+  To include them, generate this at build time from the API rather than editing
+  it by hand. Until then Google finds product pages by following links from
+  /products, which is what the internal linking is for.
+
+  `lastmod` is honest or absent. A file claiming every page changed today, every
+  day, gets its lastmod ignored entirely.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://f2hmarket.com/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://f2hmarket.com/products</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://f2hmarket.com/weekly-basket</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://f2hmarket.com/farmers</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://f2hmarket.com/how-it-works</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+</urlset>

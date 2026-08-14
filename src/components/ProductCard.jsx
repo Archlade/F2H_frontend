@@ -4,15 +4,26 @@ import { MapPin, Star, Truck, ShoppingBag, Heart, BadgeCheck, ShoppingCart } fro
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { favoritesAPI } from '../api'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 
 export default function ProductCard({ product, showDistance = true, compact = false }) {
   const { isAuthenticated, user } = useAuth()
   const { addItem } = useCart()
   const navigate = useNavigate()
-  const [favorited, setFavorited] = useState(false)
+  // Seeded from the server, not from `false`.
+  //
+  // Starting at false meant the heart was always empty on load however many
+  // products you had liked — and worse, tapping one you already liked sent the
+  // toggle, which *removed* it, while the toast said "Added to favorites".
+  const [favorited, setFavorited] = useState(Boolean(product.is_favorited))
   const [adding, setAdding] = useState(false)
+
+  // A card can be re-rendered with a different product (paging, filtering) and
+  // React keeps the state from the previous one unless it is told otherwise.
+  useEffect(() => {
+    setFavorited(Boolean(product.is_favorited))
+  }, [product.id, product.is_favorited])
 
   const soldOut = product.stock_status === 'out_of_stock'
   // Hidden rather than disabled for people who cannot buy at all: an admin, or

@@ -1,0 +1,27 @@
+# F2H Market — https://f2hmarket.com
+#
+# Everything public is crawlable. What is disallowed below is not secret — it is
+# behind a login and a crawler only ever sees a redirect there, so allowing it
+# spends crawl budget on pages that can never appear in a result.
+
+User-agent: *
+Allow: /
+
+Disallow: /dashboard
+Disallow: /farmer
+Disallow: /admin
+Disallow: /auth
+Disallow: /reset-password
+Disallow: /forgot-password
+Disallow: /cart
+Disallow: /account/delete
+
+# Search and filter URLs. The same products under a hundred query strings look
+# like a hundred thin pages competing with each other; the canonical tag points
+# them all back at the clean URL, and this keeps them out of the crawl entirely.
+Disallow: /*?q=
+Disallow: /*?category_id=
+Disallow: /*?sort=
+Disallow: /*?page=
+
+Sitemap: https://f2hmarket.com/sitemap.xml

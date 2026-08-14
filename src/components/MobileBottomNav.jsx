@@ -22,7 +22,6 @@ export default function MobileBottomNav() {
       { to: '/farmer', label: 'Dashboard', icon: LayoutDashboard, end: true },
       { to: '/farmer/products', label: 'Products', icon: ShoppingBag },
       { to: '/farmer/requests', label: 'Requests', icon: FileText },
-      { to: '/farmer/chat', label: 'Messages', icon: MessageCircle },
       { to: '/farmer/profile', label: 'Farm', icon: Tractor },
     ]
   } else if (role === 'admin') {
@@ -39,7 +38,6 @@ export default function MobileBottomNav() {
       { to: '/', label: 'Home', icon: Home, end: true },
       { to: '/products', label: 'Shop', icon: ShoppingBag },
       { to: '/dashboard/requests', label: 'Requests', icon: FileText },
-      { to: '/dashboard/chat', label: 'Messages', icon: MessageCircle },
       { to: '/dashboard', label: 'Account', icon: User },
     ]
   } else {

@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { Search, SlidersHorizontal, X, ChevronDown, Filter, Check } from 'lucide-react'
 import { productsAPI, categoriesAPI } from '../api'
 import ProductCard from '../components/ProductCard'
+import { useSeo } from '../utils/seo'
 
 const SORT_OPTIONS = [
   { value: 'newest', label: 'Newest' },
@@ -28,6 +29,7 @@ function SkeletonCard() {
 }
 
 export default function ProductsPage() {
+  useSeo('Fresh Vegetables & Groceries Online', 'Browse farm-fresh vegetables, fruit and groceries from local farmers. Compare prices, see what is in season, and get it delivered to your home with cash on delivery.')
   const [searchParams, setSearchParams] = useSearchParams()
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])

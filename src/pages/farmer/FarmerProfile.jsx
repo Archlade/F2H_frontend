@@ -49,17 +49,57 @@ const FarmerProfile = () => {
     }
   };
 
+  /**
+   * Where the farm is.
+   *
+   * A *location*, not a delivery address. This used to POST the coordinates to
+   * `/locations/addresses`, which was wrong twice over:
+   *
+   *  - Nothing read them. The farm pin on a farm's page, and the distance shown
+   *    on every product and farmer listing, all come from a `Location` row with
+   *    `location_type='farm'`. Coordinates saved as an Address went somewhere
+   *    nothing looks, so "farmers near you" never worked for anyone who set
+   *    their location here.
+   *  - It added a fake "Farm Coordinates" entry to the farmer's own delivery
+   *    addresses, which is where their shopping goes.
+   *
+   * It also started failing outright once addresses began requiring a city,
+   * state and PIN — a bare latitude and longitude has none of those. That error
+   * is what surfaced this; the silent half had been broken far longer.
+   */
+  const saveFarmLocation = async () => {
+    if (!formData.latitude || !formData.longitude) return;
+
+    const payload = {
+      location_type: 'farm',
+      label: 'Farm',
+      latitude: Number(formData.latitude),
+      longitude: Number(formData.longitude),
+      is_primary: true,
+    };
+
+    // Updated in place when one already exists. Posting every time would leave
+    // a trail of old pins, and the readers all take `.first()` — so the farm
+    // would keep showing at whichever one happened to be found first.
+    const { data } = await locationsAPI.list();
+    const existing = (Array.isArray(data) ? data : data?.items || [])
+      .find(l => l.location_type === 'farm');
+
+    if (existing) await locationsAPI.update(existing.id, payload);
+    else await locationsAPI.add(payload);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
       await farmersAPI.updateProfile(formData);
-      if (formData.latitude && formData.longitude) {
-        await locationsAPI.addAddress({ label: 'Farm Location', latitude: formData.latitude, longitude: formData.longitude, is_default: true, address_line1: 'Farm Coordinates' });
-      }
+      await saveFarmLocation();
       toast.success('Profile updated');
     } catch (err) {
-      toast.error('Failed to update profile');
+      // The server's message, not a generic one. "Failed to update profile"
+      // told the farmer nothing about which field it objected to.
+      toast.error(err.response?.data?.error || 'Failed to update profile');
     } finally {
       setLoading(false);
     }

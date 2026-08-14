@@ -1,6 +1,7 @@
 import { CheckCircle, Leaf, Truck, Package, MessageCircle, Star, ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import SellAsFarmerButton from '../components/SellAsFarmerButton'
+import { useSeo } from '../utils/seo'
 
 const steps = [
   {
@@ -26,6 +27,7 @@ const steps = [
 ]
 
 export default function HowItWorksPage() {
+  useSeo('How It Works', 'How F2H Market works: order farm-fresh groceries from local farmers, pay cash on delivery, and get produce picked the morning it ships. No subscriptions, no card needed.')
   return (
     <div>
       {/* Hero */}
