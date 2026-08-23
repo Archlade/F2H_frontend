@@ -1,5 +1,37 @@
 import { Link } from 'react-router-dom'
-import { Instagram, Globe, Mail } from 'lucide-react'
+import { Globe, Mail } from 'lucide-react'
+
+/**
+ * The Instagram mark, drawn inline.
+ *
+ * lucide-react has no `Instagram` to import — brand icons were dropped in v1
+ * and are not coming back, so this is not a version we can upgrade our way out
+ * of. Rather than settle for a generic share or camera glyph, this is the same
+ * outline lucide used to ship, drawn to match the icons beside it: 24×24 box,
+ * `currentColor`, 2px round-capped strokes. It therefore inherits the link's
+ * colour and its hover transition without any extra styling.
+ */
+function Instagram({ size = 16 }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+      <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+    </svg>
+  )
+}
 
 /**
  * The profiles this footer links to.
