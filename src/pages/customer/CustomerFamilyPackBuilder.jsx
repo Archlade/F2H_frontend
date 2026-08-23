@@ -13,15 +13,36 @@ import CouponField from '../../components/CouponField'
 import { useAuth } from '../../context/AuthContext'
 import { basketPaths } from '../../utils/basketPaths'
 
+const WEEKDAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday',
+  'Friday', 'Saturday', 'Sunday']
+
+/**
+ * Baskets are delivered at the weekend. 5 = Saturday, 6 = Sunday, matching
+ * `DELIVERY_WEEKDAYS` in backend/app/services/family_pack_subscription_service.py
+ * — the server rejects anything else, so offering a Tuesday here would only
+ * produce a button that fails on save.
+ *
+ * Two days rather than seven is what makes the buying plan workable: produce
+ * for a Saturday round is bought on Friday in one trip, where seven scattered
+ * weekdays is seven trips for the same volume.
+ */
 const WEEKDAYS = [
-  { value: 0, label: 'Monday' },
-  { value: 1, label: 'Tuesday' },
-  { value: 2, label: 'Wednesday' },
-  { value: 3, label: 'Thursday' },
-  { value: 4, label: 'Friday' },
   { value: 5, label: 'Saturday' },
   { value: 6, label: 'Sunday' },
 ]
+
+/**
+ * The days to show, including this basket's own if it predates the rule.
+ *
+ * Baskets created when any weekday was allowed keep their day until the
+ * customer moves it. Without this the picker would render with nothing
+ * selected, and the first tap would silently reschedule a delivery they never
+ * asked to change.
+ */
+function weekdayOptions(current) {
+  if (current == null || WEEKDAYS.some(d => d.value === current)) return WEEKDAYS
+  return [...WEEKDAYS, { value: current, label: `${WEEKDAY_NAMES[current]} (current)` }]
+}
 
 /**
  * Build (or edit) a weekly basket: anything in the catalogue, a delivery day
@@ -270,7 +291,7 @@ export default function CustomerFamilyPackBuilder() {
           <div className="card" style={{ padding: 24, borderRadius: 'var(--radius-xl)' }}>
             <h3 className="text-h4" style={{ marginBottom: 14 }}>2 · Delivery day</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
-              {WEEKDAYS.map(d => (
+              {weekdayOptions(weekday).map(d => (
                 <button
                   key={d.value}
                   type="button"
@@ -281,6 +302,9 @@ export default function CustomerFamilyPackBuilder() {
                 </button>
               ))}
             </div>
+            <small className="text-muted" style={{ display: 'block', marginTop: 8 }}>
+              Baskets are delivered at the weekend.
+            </small>
 
             <div style={{ marginTop: 18 }}>
               <label className="form-label flex items-center gap-1">
@@ -326,7 +350,10 @@ export default function CustomerFamilyPackBuilder() {
             </div>
             <div className="text-xs text-muted" style={{ marginTop: 4 }}>
               {chosen.length} product{chosen.length === 1 ? '' : 's'} · every{' '}
-              {WEEKDAYS[weekday].label}
+              {/* `WEEKDAY_NAMES`, not `WEEKDAYS` — the latter is now the two
+                  selectable days, so indexing it by weekday number would read
+                  past the end and throw. */}
+              {WEEKDAY_NAMES[weekday]}
             </div>
 
             {/* The code is single use, so only the first delivery is

@@ -17,6 +17,7 @@ import AuthPage from './pages/AuthPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import HowItWorksPage from './pages/HowItWorksPage'
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
 import WeeklyBasketPage from './pages/WeeklyBasketPage'
 
 // Customer pages
@@ -62,6 +63,7 @@ import AdminFeaturedContent from './pages/admin/AdminFeaturedContent'
 import AdminHomepage from './pages/admin/AdminHomepage'
 import AdminBanners from './pages/admin/AdminBanners'
 import AdminAuditLogs from './pages/admin/AdminAuditLogs'
+import AdminSettings from './pages/admin/AdminSettings'
 import AdminAnnouncements from './pages/admin/AdminAnnouncements'
 import AdminAnalytics from './pages/admin/AdminAnalytics'
 import AdminBaskets from './pages/admin/AdminBaskets'
@@ -113,6 +115,7 @@ export default function App() {
           <Route path="/farmers" element={<FarmersPage />} />
           <Route path="/farmers/:id" element={<FarmerDetailPage />} />
           <Route path="/how-it-works" element={<HowItWorksPage />} />
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
           {/* The weekly basket's public front door. It used to live on the
               family-packs page; removing family packs took it with it, leaving
               a built feature nobody signed out could find. */}
@@ -211,6 +214,7 @@ export default function App() {
           <Route path="featured" element={<AdminFeaturedContent />} />
           <Route path="homepage" element={<AdminHomepage />} />
           <Route path="banners" element={<AdminBanners />} />
+          <Route path="settings" element={<AdminSettings />} />
           <Route path="audit-logs" element={<AdminAuditLogs />} />
           <Route path="announcements" element={<AdminAnnouncements />} />
           <Route path="analytics" element={<AdminAnalytics />} />

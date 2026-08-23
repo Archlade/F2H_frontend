@@ -5,6 +5,8 @@ import toast from 'react-hot-toast'
 
 import { locationsAPI, toList } from '../api'
 import { useCart } from '../context/CartContext'
+import { useAuth } from '../context/AuthContext'
+import { basketPaths } from '../utils/basketPaths'
 import { useSeo } from '../utils/seo'
 
 /**
@@ -24,7 +26,14 @@ import { useSeo } from '../utils/seo'
 export default function CartPage() {
   useSeo('Your Cart', 'Review your basket of farm-fresh groceries and check out with cash on delivery.')
   const { cart, loading, updateItem, removeItem, checkout } = useCart()
+  const { user } = useAuth()
   const navigate = useNavigate()
+
+  // Farmers buy from each other and the cart is public, so a farmer can reach
+  // this page — and their address screen is not the customer one. A hardcoded
+  // /dashboard/addresses here sent them to a route the guard bounces them off,
+  // with no way to add the address the order needs.
+  const paths = basketPaths(user?.role)
 
   const [addresses, setAddresses] = useState([])
   const [addressId, setAddressId] = useState('')
@@ -182,7 +191,7 @@ export default function CartPage() {
             <label className="form-label">Delivery address</label>
             {addresses.length === 0 ? (
               <p className="text-sm text-muted">
-                No saved addresses. <Link to="/dashboard/addresses" style={{ fontWeight: 600 }}>Add one</Link> first.
+                No saved addresses. <Link to={paths.addresses} style={{ fontWeight: 600 }}>Add one</Link> first.
               </p>
             ) : (
               <select className="form-input" value={addressId} onChange={(e) => setAddressId(e.target.value)}>

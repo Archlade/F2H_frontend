@@ -97,7 +97,7 @@ export default function CustomerFamilyPackOrders() {
           <span className="badge badge-success flex items-center gap-1" style={{ marginBottom: 6 }}>
             <Calendar size={12} /> WEEKLY ROUTINE
           </span>
-          <h1 className="text-h2">My Weekly Family Pack</h1>
+          <h1 className="text-h2">My Weekly Basket</h1>
         </div>
         <div className="card" style={{ padding: 48, borderRadius: 'var(--radius-xl)', textAlign: 'center' }}>
           <Package size={40} className="text-muted" style={{ margin: '0 auto 14px' }} />
@@ -127,7 +127,7 @@ export default function CustomerFamilyPackOrders() {
           <span className="badge badge-success flex items-center gap-1" style={{ marginBottom: 6 }}>
             <Calendar size={12} /> EVERY {subscription.weekday_name?.toUpperCase()}
           </span>
-          <h1 className="text-h2">My Weekly Family Pack</h1>
+          <h1 className="text-h2">My Weekly Basket</h1>
           <p className="text-sm text-muted">
             From {subscription.farmer?.farm_name || 'your farm'} — delivered to your door every week.
           </p>

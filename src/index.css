@@ -87,6 +87,24 @@
 
   /* Layout dimensions */
   --nav-height: 72px;
+
+  /* The navbar's real footprint, which is not always its height.
+
+     `--nav-height` is how tall the row of links is. `--nav-total` is how much
+     vertical space the bar actually occupies once iOS is done with it: in a
+     browser tab the inset is 0 and the two are identical, but installed to the
+     home screen (the manifest says `"display": "standalone"`) the web view
+     starts at the physical top of the screen, so the bar needs another ~59px
+     of padding to clear the Dynamic Island.
+
+     Anything positioning itself *below* the navbar wants this value, not
+     `--nav-height`, or it lands under the island's worth of padding. The
+     `var()` indirection is deliberate: `--nav-height` drops to 64px in a media
+     query below, and because custom properties are substituted at
+     computed-value time rather than where they are declared, this picks that
+     up on its own. */
+  --nav-total: calc(var(--nav-height) + env(safe-area-inset-top));
+
   --sidebar-width: 260px;
   --content-max: 1280px;
 
@@ -118,8 +136,29 @@ body {
   color: var(--color-gray-800);
   line-height: 1.6;
   min-height: 100vh;
+  min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* `clip`, not `hidden`.
+
+     Both stop a stray few pixels of overflow from turning the whole page into
+     a sideways scroller — which on a phone reads as "everything is shifted",
+     because the viewport is parked slightly off-centre and the fixed bottom
+     nav (anchored to the viewport) no longer lines up with the content
+     (anchored to the document).
+
+     `overflow: hidden` would do it too, but it makes the body a scroll
+     container, and `position: sticky` only sticks within its nearest scrolling
+     ancestor. The navbar, the dashboard sidebar and the product sticky bar all
+     rely on sticky; `hidden` would silently stop all three from sticking. See
+     https://drafts.csswg.org/css-overflow-3/#valdef-overflow-clip — `clip`
+     clips without creating that container, which is the behaviour wanted here.
+
+     This is a safety net, not a licence to ship overflowing elements: it hides
+     the symptom, so anything that genuinely overflows still needs fixing at
+     the source. */
+  overflow-x: clip;
 }
 
 /* Touch-friendly interactive targets */
@@ -170,6 +209,16 @@ h1, h2, h3, h4, h5, h6 {
   padding: 0 var(--space-container-padding);
 }
 
+/* The public shell: navbar, page, footer, stacked, footer pushed to the bottom
+   on short pages. Moved here from an inline style in MainLayout.jsx so the
+   mobile override below can reach it — inline styles outrank media queries. */
+.main-layout-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
 .section {
   padding: var(--space-section-vertical) 0;
 }
@@ -182,7 +231,19 @@ h1, h2, h3, h4, h5, h6 {
 .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
 .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
-.grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
+/* `min(280px, 100%)` rather than a bare `280px`.
+
+   A `minmax()` floor is a hard floor: once the container is narrower than the
+   minimum, the track keeps its size anyway and the grid spills out of its
+   parent. On a 393px phone this grid sits inside a container with 16px of
+   padding a side and clears 280px with room to spare — but it is also used
+   inside cards and dashboard panes that add their own padding, and there the
+   floor is what pushes the page sideways.
+
+   Wrapping it in `min()` says "280px, or the full width if that is less",
+   which lets the track collapse to one full-width column instead of
+   overflowing. It changes nothing on any viewport where 280px already fit. */
+.grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 24px; }
 
 .flex { display: flex; }
 .flex-col { flex-direction: column; }
@@ -628,7 +689,12 @@ h1, h2, h3, h4, h5, h6 {
    NAVBAR
 ═══════════════════════════════════════════════════════ */
 .navbar {
-  height: var(--nav-height);
+  /* Padded rather than simply taller, so `.navbar__inner`'s `height: 100%`
+     still resolves to the link row's height — `100%` measures the parent's
+     content box, and border-box keeps the padding outside it. The bar grows
+     into the status bar area; the links inside it do not move. */
+  height: var(--nav-total);
+  padding-top: env(safe-area-inset-top);
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -859,8 +925,19 @@ h1, h2, h3, h4, h5, h6 {
   bottom: 0;
   left: 0;
   right: 0;
+  /* The bar grows by the home-indicator inset and pads by the same amount, so
+     the row of icons keeps its full 64px and simply sits above the indicator
+     rather than being overlapped by it. Until `viewport-fit=cover` was added
+     to the viewport meta in index.html these insets all resolved to 0px and
+     this rule did exactly nothing.
+
+     Left and right matter in landscape, where the cutout is on one side: they
+     are 0 in portrait, so this costs nothing there. Without them the outermost
+     icon on a rotated phone sits under the notch. */
   height: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -1097,7 +1174,19 @@ h1, h2, h3, h4, h5, h6 {
 ═══════════════════════════════════════════════════════ */
 .dashboard-layout {
   display: flex;
-  min-height: calc(100vh - var(--nav-height));
+  /* Two declarations, in this order, on purpose.
+
+     `dvh` is the "dynamic" viewport height — it tracks the visible area as
+     mobile Safari's URL bar slides away, where `vh` is frozen at the *largest*
+     the viewport ever gets and so measures roughly 60px more than is on screen
+     while the bar is showing.
+
+     A browser that does not know `dvh` treats the second declaration as
+     invalid and discards it, keeping the `vh` line; one that does know it
+     applies the second and wins on source order. That is the whole fallback —
+     no `@supports` block needed, and nothing is left unset either way. */
+  min-height: calc(100vh - var(--nav-total));
+  min-height: calc(100dvh - var(--nav-total));
   position: relative;
 }
 
@@ -1119,8 +1208,9 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--color-gray-900);
   flex-shrink: 0;
   position: sticky;
-  top: var(--nav-height);
-  height: calc(100vh - var(--nav-height));
+  top: var(--nav-total);
+  height: calc(100vh - var(--nav-total));
+  height: calc(100dvh - var(--nav-total));
   overflow-y: auto;
   overflow-x: hidden;
   padding: 24px 0;
@@ -1496,7 +1586,7 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: var(--shadow-card);
   border: 1px solid var(--color-gray-100);
   position: sticky;
-  top: calc(var(--nav-height) + 24px);
+  top: calc(var(--nav-total) + 24px);
 }
 
 .filter-section {
@@ -1750,11 +1840,25 @@ h1, h2, h3, h4, h5, h6 {
 
   .product-detail-sticky-bar {
     display: flex;
-    padding: 10px 24px;
+
+    /* Longhands, not the `padding: 10px 24px` shorthand that was here.
+
+       The base rule pads the bottom by `calc(12px + env(safe-area-inset-bottom))`
+       to clear the home indicator. A shorthand rewrites all four sides, so it
+       was silently resetting that to a flat 10px and dropping the inset — on an
+       iPad, where this breakpoint lands, the Add to Cart button ended up under
+       the indicator bar. Only the two sides that actually need changing are
+       touched now. */
+    padding-top: 10px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+    padding-left: 24px;
+    padding-right: 24px;
   }
 
   .product-detail-page {
-    padding-bottom: 96px;
+    /* Room for the fixed bar above, which is itself inset-aware — so the
+       reservation has to be too, or the last row of content hides behind it. */
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
   }
 }
 
@@ -1806,9 +1910,38 @@ h1, h2, h3, h4, h5, h6 {
     display: block;
   }
 
-  /* Ensure page layouts leave room for mobile bottom nav */
-  body, main {
+  /* Room for the fixed bottom nav — reserved once, on `body`, and nowhere else.
+
+     This used to read `body, main`, and `main` is a child of `body`, so the
+     reservation was made twice and the two stacked: every page on a phone
+     ended with roughly 196px of empty space, about a quarter of the screen.
+     It looked like the footer had come loose from the bottom of the page.
+
+     (It was 128px before `viewport-fit=cover` was added, because the inset
+     was resolving to 0. Switching the insets on doubled the visible symptom
+     along with the padding, which is worth knowing if this looked worse
+     rather than better after that change.)
+
+     `body` is the right owner rather than `main`: the nav is `position: fixed`
+     and therefore out of flow, so what has to clear it is the bottom of the
+     *document*, and the footer sits after `main`. Padding `main` alone would
+     leave the footer underneath the nav. Anything inside — `.dashboard-content`
+     among them — should size its own spacing and leave the nav to this rule. */
+  body {
     padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom));
+  }
+
+  /* Give back exactly what `body` just took.
+
+     The shell asks for a full screen and `body` adds the nav clearance below
+     it, so together they come to one screen *plus* ~98px — enough that a page
+     with almost nothing on it still scrolls, and the footer never settles
+     where it should. Subtracting the same amount here makes the two add up to
+     one screen again, which is what "footer at the bottom" is supposed to
+     mean. */
+  .main-layout-root {
+    min-height: calc(100vh - var(--bottom-nav-height) - env(safe-area-inset-bottom));
+    min-height: calc(100dvh - var(--bottom-nav-height) - env(safe-area-inset-bottom));
   }
 
   /* Dashboard/Admin sidebar becomes an overlay drawer only on mobile —
@@ -1826,7 +1959,25 @@ h1, h2, h3, h4, h5, h6 {
     top: 0;
     left: 0;
     bottom: 0;
+
+    /* As a drawer this is pinned top *and* bottom, so `bottom: 0` already
+       sizes it and `height` only ever contradicts that. At `100vh` it
+       contradicted it by about 60px on iOS. When top, height and bottom are
+       all set, `bottom` is the one dropped — so the drawer became a box 60px
+       taller than the screen. Its own `overflow-y: auto` does not rescue that:
+       the content fits the box, the box is what hangs off the bottom, so the
+       last nav item (Sign Out) sits below the edge with nothing to scroll.
+       `dvh` measures what is actually visible; the `vh` line above it is the
+       fallback for browsers without `dvh`, which land back on today's
+       behaviour rather than on nothing at all.
+
+       The top inset is not applied here deliberately: a drawer is meant to
+       cover the full screen edge to edge, and its own first child carries the
+       padding that keeps the close button clear of the island. */
     height: 100vh;
+    height: 100dvh;
+    padding-top: calc(24px + env(safe-area-inset-top));
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
     z-index: var(--z-modal);
     transform: translateX(-100%);
   }
@@ -1840,8 +1991,11 @@ h1, h2, h3, h4, h5, h6 {
   }
 
   .dashboard-content {
+    /* Just its own breathing room. The bottom nav is cleared by the `body`
+       rule above, which applies here too — this element is a `<main>`, so it
+       was picking up a second helping of the same reservation and adding a
+       third of its own on top. */
     padding: 20px 16px;
-    padding-bottom: calc(var(--bottom-nav-height) + 24px);
   }
 
   /* Grids collapse to single/compact columns */
@@ -1954,13 +2108,34 @@ h1, h2, h3, h4, h5, h6 {
     display: none;
   }
 
+  /* The toolbar's mobile layout lives here and only here.
+
+     There was a second `.products-toolbar` block further down this same
+     `max-width: 767px` tier setting `flex-direction: column`, while this one
+     set `flex-wrap: wrap` — two rules, same breakpoint, ~700 lines apart,
+     each written as though it were the only one. Both applied, so the toolbar
+     was a wrapping column, and `flex: 1 1 100%` then meant something quite
+     different from what it looks like: `flex-basis` runs along the main axis,
+     which in a column is vertical, so that was sizing the search field by
+     *height*. It only escaped notice because the container's height is auto,
+     which makes a percentage basis fall back to `auto`.
+
+     Stacking is what was wanted, so `column` is kept and the sizing is stated
+     the way a column actually reads: full width, natural height. */
   .products-toolbar {
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 10px;
   }
 
   .products-toolbar .input-icon-wrap {
-    /* overrides the inline style="flex:1" set in ProductsPage.jsx */
-    flex: 1 1 100% !important;
+    /* Beats the inline `style={{ flex: 1 }}` in ProductsPage.jsx, which is why
+       this needs `!important` — an inline style outranks any selector. */
+    flex: 0 0 auto !important;
+    width: 100%;
+  }
+
+  .products-toolbar .form-select {
+    width: 100%;
   }
 
   /* Mobile Bottom Sheet Modal */
@@ -1991,7 +2166,7 @@ h1, h2, h3, h4, h5, h6 {
   }
 
   .product-detail-page {
-    padding-bottom: 120px;
+    padding-bottom: calc(120px + env(safe-area-inset-bottom));
   }
 
   /* Chat Pane on Mobile */
@@ -2503,7 +2678,7 @@ h1, h2, h3, h4, h5, h6 {
 ═══════════════════════════════════════════════════════ */
 .farmer-product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
   gap: 20px;
 }
 
@@ -2659,14 +2834,9 @@ h1, h2, h3, h4, h5, h6 {
   }
 
   /* Products page: mobile toolbar */
-  .products-toolbar {
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .products-toolbar .form-select {
-    width: 100%;
-  }
+  /* `.products-toolbar` intentionally not restated here — its mobile layout is
+     defined once, in the earlier `max-width: 767px` block alongside the rest
+     of the products page. Two blocks at the same breakpoint were fighting. */
 
   /* Farmer product card mobile override */
   .farmer-product-card-image {
@@ -3290,4 +3460,292 @@ h1, h2, h3, h4, h5, h6 {
 .admin-queue-row strong {
   color: var(--color-gray-900);
   font-weight: 700;
+}
+
+/* ═══════════════════════════════════════════════════════
+   PAGE GUTTERS — products, farmers, weekly basket, how it works
+═══════════════════════════════════════════════════════ */
+
+/*
+   These four pages hold 24px of side padding at every width instead of
+   following `--space-container-padding` down to 20px and then 16px.
+
+   They are the pages a customer browses rather than works in — grids of cards
+   with their own internal padding — and at 16px the card edges sit almost on
+   the screen edge while the text inside them is inset twice that. The dashboard
+   keeps the tighter gutters, where the extra 8px of table is worth more than
+   the breathing room.
+
+   ── Why this block is at the end of the file ──────────────────────────────
+
+   `--space-container-padding` is redefined inside `max-width: 1023px` and
+   `max-width: 767px` blocks earlier on. Two rules of equal specificity are
+   settled by source order, so this has to come after them or the narrow tiers
+   would keep winning. Putting it last is what makes it hold at 375 and 425.
+
+   ── Why the padding and not the variable ──────────────────────────────────
+
+   Overriding `--space-container-padding` on these pages would look tidier and
+   would not work: `.container` is the element the variable is read on, and the
+   page class is on that same element for three of these four pages — but on
+   How It Works the class is on a wrapper *outside* several `.container`s, and a
+   variable set there would cascade into every one of them including the hero.
+   Setting the padding directly, scoped by descendant selector, behaves the same
+   in both shapes.
+*/
+.products-page,
+.farmers-page,
+.weekly-basket-page,
+.how-it-works-page .container {
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+/* Below 360px the 48px of gutter costs more than it returns — a product card
+   at 312px wide starts truncating names that fit a moment earlier. The two
+   widths asked for (375 and 425) are both above this, so it changes nothing
+   there; it is here so the smallest phones still in use do not pay for it. */
+@media (max-width: 359px) {
+  .products-page,
+  .farmers-page,
+  .weekly-basket-page,
+  .how-it-works-page .container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   FOOTER — the 901px to 1279px band
+═══════════════════════════════════════════════════════ */
+
+/*
+   Four columns survive down to about 1280px and then quietly stop fitting.
+
+   The arithmetic at 1024px, which is where it shows: 1024 minus 48px of gutter
+   leaves 976px, minus three 40px gaps leaves 856px across `1.5fr 1fr 1fr 1fr`.
+   That is 285px for the brand and 190px for each of the other three — and the
+   longest thing in the last column, "@farm.to.home_ on Instagram" plus its
+   15px icon and 8px gap, needs about 212px. So it wrapped under the icon and
+   the column read as two ragged lines.
+
+   Narrowing the brand column and tightening the gap gives 892px across 4.2fr:
+   255px for the brand, 212px each for the rest. The link fits on one line with
+   nothing else moving.
+
+   Below 901px the existing two-column rule takes over, which is the right
+   shape there — this band is only about the last width where four still work.
+*/
+@media (min-width: 901px) and (max-width: 1279px) {
+  .footer__grid {
+    grid-template-columns: 1.2fr 1fr 1fr 1fr;
+    gap: 28px;
+  }
+}
+
+/* The contact links are flex rows, so their icon is a flex item and shrinks
+   before the text wraps — a 15px glyph squashed to 9px, which reads as a
+   rendering fault rather than a tight column. Pinning the icon and letting the
+   label wrap puts the give in the right place. */
+.footer__link svg {
+  flex-shrink: 0;
+}
+
+.footer__link {
+  /* `anywhere`, not `break-word`: an email address and an @handle are single
+     unbroken tokens, and `break-word` will not split one to avoid an overflow
+     — it only breaks when a word cannot fit a line on its own. */
+  overflow-wrap: anywhere;
+}
+
+/* ═══════════════════════════════════════════════════════
+   HOW IT WORKS — numbered steps
+═══════════════════════════════════════════════════════ */
+
+/*
+   The card padding and the number's diameter are custom properties because the
+   connector line between two steps has to start from the centre of the number,
+   and that centre is `padding + radius`. Written as two inline constants — as
+   they were — the line was placed at 50px against a true centre of 62px, so it
+   ran 12px to the left of the circle it was drawn from. Deriving it means the
+   narrow-width override below cannot reintroduce that.
+*/
+.hiw-step {
+  --hiw-pad: 32px;
+  --hiw-number: 60px;
+
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+  background: white;
+  padding: var(--hiw-pad);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--color-gray-100);
+  position: relative;
+}
+
+.hiw-step__number {
+  width: var(--hiw-number);
+  height: var(--hiw-number);
+  flex-shrink: 0;
+  background: linear-gradient(135deg, var(--color-primary-100), var(--color-primary-200));
+  border-radius: var(--radius-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.125rem;
+  color: var(--color-primary-700);
+}
+
+.hiw-step__connector {
+  position: absolute;
+  /* Centre of the number, less half the line's own width. */
+  left: calc(var(--hiw-pad) + (var(--hiw-number) / 2) - 1px);
+  bottom: -40px;          /* the 40px flex gap between cards */
+  width: 2px;
+  height: 40px;
+  background: linear-gradient(to bottom, var(--color-primary-300), transparent);
+  z-index: 1;
+}
+
+@media (max-width: 768px) {
+  /*
+     At 768 the page is 720px of content and the steps column is capped at 720,
+     so the cards are already at full width with nowhere left to give. 32px of
+     padding either side plus a 60px number plus a 32px gap spends 156px of it
+     before a word of the step is drawn.
+
+     Trimming all three returns about 40px to the text, and the connector
+     follows on its own because it is derived rather than fixed.
+  */
+  .hiw-step {
+    --hiw-pad: 24px;
+    --hiw-number: 52px;
+    gap: 20px;
+  }
+
+  /* 100px of gradient above the title is a lot of scrolling before the page
+     says anything, on a screen this size. */
+  .how-it-works-page > section:first-of-type {
+    padding: 56px 0 48px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   FARMERS + WEEKLY BASKET — the tablet band
+═══════════════════════════════════════════════════════ */
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  /*
+     Two farm cards, not three.
+
+     `.grid-3` gives three tracks all the way down to 768, where 720px of
+     content less two 24px gaps leaves 224px per card. A farm card is a cover
+     image, an avatar overlapping it, a farm name, a location and a rating —
+     at 224px the name truncates on most farms and the rating wraps under the
+     location. Two cards at 348px each show all of it.
+  */
+  .farmers-page .grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 425px) {
+  /*
+     The hero's floating badges are absolutely positioned against the
+     illustration and pull outside it by design. `.fp-hero` clips them, so they
+     never overflow the page — but at this width the illustration is narrow
+     enough that a clipped badge reads as a rendering fault rather than a
+     flourish. Below 426px they come off.
+  */
+  .weekly-basket-page .fp-hero__float-badge {
+    display: none;
+  }
+
+  /* The four "how a basket works" steps carry 24px of padding inside a card
+     that is itself inside 24px of page gutter. On a 375px screen that is 96px
+     of the 375 spent on nothing. */
+  .weekly-basket-page .card {
+    padding: 18px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   GAPS FOUND BY AUDIT — classes used in JSX with no rule
+═══════════════════════════════════════════════════════ */
+
+/*
+   Each of these is referenced by `className` somewhere and had nothing behind
+   it, so the markup read as styled and rendered as plain. That is the quietest
+   kind of bug in this codebase: nothing errors, nothing logs, the element just
+   looks slightly wrong and everyone assumes it was designed that way.
+
+   Not everything the audit flagged is here. Most of the rest — `.admin-users`,
+   `.pagination`, `.dashboard-mobile-header__toggle` and friends — are naming
+   hooks sitting alongside real utility classes that already do the work
+   (`flex flex-between items-center`, `btn btn-ghost btn-icon`). Those are fine
+   as they are; adding empty rules for them would be noise.
+*/
+
+/* Utilities whose siblings exist but which were never written. `.font-bold` and
+   `.font-semibold` are both defined, so `font-normal` reads as deliberate at
+   the call site — it just never reset anything. */
+.font-normal { font-weight: 400; }
+.uppercase { text-transform: uppercase; }
+.tracking-wider { letter-spacing: 0.05em; }
+.inline-block { display: inline-block; }
+
+/* Tailwind-shaped name, so the colon needs escaping to be a valid selector —
+   unescaped, `.hover:text-gray-900` parses as a `:hover` pseudo-class on a
+   `.hover` element and matches nothing. */
+.hover\:text-gray-900:hover { color: var(--color-gray-900); }
+
+/*
+   The full-page spinner shown while a protected route resolves its session.
+   Without this the spinner sat in the top-left corner of an otherwise blank
+   page, which reads as a broken render rather than as loading.
+
+   `dvh` for the same reason as everywhere else: on iOS `vh` counts the
+   collapsing URL bar, so the spinner would centre against a viewport taller
+   than the one being looked at.
+*/
+.page-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  min-height: 60dvh;
+}
+
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+/* `hidden-mobile` was doing nothing, so the farmer's "Add Product" button
+   appeared in the mobile dashboard header it was written to stay out of —
+   crowding a bar that is already tight at 375px. */
+@media (max-width: 767px) {
+  .hidden-mobile { display: none !important; }
+}
+
+/* The privacy policy is a read-through content page like the other four, so it
+   keeps the same 24px gutters rather than following the container down to 16. */
+.legal-page {
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+@media (max-width: 359px) {
+  .legal-page {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
 }

@@ -20,7 +20,7 @@ export default function FarmerFamilyPackOrders() {
       const res = await familyPackOrdersAPI.list()
       setOrders(res.data.items || [])
     } catch {
-      toast.error('Failed to load Family Pack orders')
+      toast.error('Failed to load basket deliveries')
     } finally {
       setLoading(false)
     }
@@ -42,8 +42,8 @@ export default function FarmerFamilyPackOrders() {
         <span className="badge badge-info flex items-center gap-1" style={{ marginBottom: 6 }}>
           <Truck size={12} /> DOORSTEP ORDERS
         </span>
-        <h1 className="text-h2">Family Pack Orders</h1>
-        <p className="text-sm text-muted">Manage incoming weekly recurring orders for your curated Family Packs.</p>
+        <h1 className="text-h2">Basket Deliveries</h1>
+        <p className="text-sm text-muted">Each week&rsquo;s delivery for the standing baskets your farm supplies.</p>
       </div>
 
       {loading ? (
@@ -53,8 +53,8 @@ export default function FarmerFamilyPackOrders() {
           <div className="empty-state__icon" style={{ background: 'var(--color-primary-50)', color: 'var(--color-primary-600)' }}>
             <Package size={32} />
           </div>
-          <h3 className="text-h4">No Family Pack Orders Received Yet</h3>
-          <p className="text-muted">Customer orders for your active Family Packs will appear here.</p>
+          <h3 className="text-h4">No basket deliveries yet</h3>
+          <p className="text-muted">Weekly deliveries for baskets that include your produce will appear here.</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

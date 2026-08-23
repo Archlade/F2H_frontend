@@ -4,7 +4,6 @@ import { Loader, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import OrderPrice from '../../components/OrderPrice';
 import CashOnDelivery from '../../components/CashOnDelivery';
-import { Link } from 'react-router-dom';
 
 /**
  * `side` picks which half of a farmer's activity to show. Farmers buy from each
@@ -12,10 +11,26 @@ import { Link } from 'react-router-dom';
  * next; passing 'buying' asks the API for the orders they placed rather than
  * the ones they are fulfilling. Customers leave it unset.
  */
+/**
+ * The states a buyer is still allowed to walk away from.
+ *
+ * Mirrors `BUYER_CANCELLABLE_FROM` in backend/app/models/request.py, and the
+ * app's `customerMayCancel` in lib/data/models/order_status.dart. Up to here the
+ * farmer has promised nothing: no stock is committed and nothing is picked.
+ * `confirmed` is where that changes — it deducts inventory and starts a farmer
+ * preparing goods they will not be paid for until someone reaches the door — so
+ * the button stops there, which is what the checkout dialog promised.
+ *
+ * The server enforces this too. This only decides whether the button is worth
+ * drawing: offering one that always fails is the worst of both.
+ */
+const BUYER_CANCELLABLE_FROM = ['pending', 'admin_review', 'accepted', 'chat_active'];
+
 const CustomerRequests = ({ side, title = 'Purchase Requests' }) => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [cancelling, setCancelling] = useState(null);
 
   const fetchRequests = async (status) => {
     setLoading(true);
@@ -35,6 +50,29 @@ const CustomerRequests = ({ side, title = 'Purchase Requests' }) => {
   useEffect(() => {
     fetchRequests(statusFilter);
   }, [statusFilter, side]);
+
+  const handleCancel = async (req) => {
+    // `confirm` rather than a styled modal, deliberately: this is the one
+    // irreversible thing on the page, and there is no undo on the other side.
+    const ok = window.confirm(
+      `Cancel your order for ${req.product_name}?\n\n` +
+      'This cannot be undone. You would need to place a new order.'
+    );
+    if (!ok) return;
+
+    setCancelling(req.id);
+    try {
+      await requestsAPI.updateStatus(req.id, { status: 'cancelled' });
+      toast.success('Order cancelled');
+      // Refetch rather than patch the row locally: cancelling can move an order
+      // out of the current filter entirely, and the server is what decides.
+      await fetchRequests(statusFilter);
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Could not cancel that order');
+    } finally {
+      setCancelling(null);
+    }
+  };
 
   const tabs = ['all', 'pending', 'accepted', 'completed', 'cancelled'];
 
@@ -95,6 +133,20 @@ const CustomerRequests = ({ side, title = 'Purchase Requests' }) => {
                     <span className={`badge status-${req.status} capitalize px-2 py-1 rounded text-xs`}>{req.status?.replace('_', ' ')}</span>
                   </td>
                   <td className="p-3" data-label="Actions">
+                    {/* Only the buyer's own orders. When `side` is set this
+                        table is a farmer looking at what they are selling, and
+                        a seller cancelling is a rejection with its own rules —
+                        that lives on the farmer's own orders screen. */}
+                    {!side && BUYER_CANCELLABLE_FROM.includes(req.status) && (
+                      <button
+                        type="button"
+                        className="btn btn-error btn-sm touch-target"
+                        onClick={() => handleCancel(req)}
+                        disabled={cancelling === req.id}
+                      >
+                        {cancelling === req.id ? 'Cancelling…' : 'Cancel'}
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

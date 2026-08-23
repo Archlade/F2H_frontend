@@ -267,7 +267,11 @@ export const bannersAPI = {
 // ─── Customers ───────────────────────────────────────────────
 export const customersAPI = {
   dashboard: () => api.get('/customers/dashboard'),
-  profile: () => api.get('/customers/profile'),
+  // No `profile` here. There was one, pointing at `/customers/profile`, which
+  // the backend has never served — `customers_bp` registers `/dashboard` and
+  // nothing else. Nothing called it, so it never 404'd in front of anyone; it
+  // just sat here looking like an endpoint that existed. The customer's own
+  // details come from `authAPI.me`.
 }
 
 // ─── Admin ───────────────────────────────────────────────────
@@ -297,6 +301,27 @@ export const adminAPI = {
   updateReport: (id, data) => api.patch(`/admin/reports/${id}`, data),
   requests: (params) => api.get('/admin/requests', { params }),
   auditLogs: (params) => api.get('/admin/audit-logs', { params }),
+
+  // Figures an admin can change without a deploy. `min_order_value: null`
+  // clears the customisation and hands the figure back to the server's
+  // configured default — it is not the same as omitting the key, which leaves
+  // the setting alone.
+  settings: () => api.get('/admin/settings'),
+  updateSettings: (data) => api.patch('/admin/settings', data),
+
+  // A report spreadsheet — `farmer-stock` or `basket-orders`.
+  //
+  // `responseType: 'blob'` is required. Without it axios parses the body as
+  // text and the .xlsx arrives corrupted, because a zip container does not
+  // survive being decoded as UTF-8.
+  report: (slug) =>
+    api.get(`/admin/reports/${slug}.xlsx`, { responseType: 'blob' }),
+
+  // Rebuild and push to Google Drive now, rather than waiting for the schedule.
+  // Distinct from `report` above: that gets a file onto *this* device, these
+  // update the copy in Drive that everyone else is looking at.
+  publishReports: () => api.post('/admin/reports/publish'),
+  publishReport: (slug) => api.post(`/admin/reports/${slug}/publish`),
   reviews: (params) => api.get('/admin/reviews', { params }),
   approveReview: (id) => api.patch(`/admin/reviews/${id}/approve`),
   createAnnouncement: (data) => api.post('/admin/announcements', data),

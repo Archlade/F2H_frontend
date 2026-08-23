@@ -84,7 +84,7 @@ export default function HowItWorksPage() {
     })),
   })
   return (
-    <div>
+    <div className="how-it-works-page">
       {/* Hero */}
       <section style={{ background: 'linear-gradient(135deg, var(--color-primary-50), var(--color-accent-50))', padding: '100px 0 80px' }}>
         <div className="container" style={{ textAlign: 'center' }}>
@@ -106,21 +106,17 @@ export default function HowItWorksPage() {
       <section className="section">
         <div className="container">
           <div style={{ maxWidth: 720, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 40 }}>
+            {/*
+              Geometry lives in index.css under `.hiw-step`, because the
+              connector has to line up with the centre of the number, and both
+              the card padding and the number's size change at narrow widths.
+              Two inline numbers cannot stay in step with a media query; two
+              custom properties can — which is why the connector used to sit
+              12px left of the circle it was drawn from.
+            */}
             {steps.map((step, i) => (
-              <div key={step.number} style={{
-                display: 'flex', gap: 32, alignItems: 'flex-start',
-                background: 'white', padding: '32px', borderRadius: 'var(--radius-2xl)',
-                boxShadow: 'var(--shadow-card)', border: '1px solid var(--color-gray-100)',
-                position: 'relative',
-              }}>
-                {/* Number */}
-                <div style={{
-                  width: 60, height: 60, flexShrink: 0,
-                  background: 'linear-gradient(135deg, var(--color-primary-100), var(--color-primary-200))',
-                  borderRadius: 'var(--radius-xl)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontWeight: 800, fontSize: '1.125rem', color: 'var(--color-primary-700)',
-                }}>
+              <div key={step.number} className="hiw-step">
+                <div className="hiw-step__number">
                   {step.number}
                 </div>
                 <div>
@@ -130,13 +126,7 @@ export default function HowItWorksPage() {
                 </div>
 
                 {/* Connector */}
-                {i < steps.length - 1 && (
-                  <div style={{
-                    position: 'absolute', left: 50, bottom: -40, width: 2, height: 40,
-                    background: 'linear-gradient(to bottom, var(--color-primary-300), transparent)',
-                    zIndex: 1,
-                  }} />
-                )}
+                {i < steps.length - 1 && <div className="hiw-step__connector" />}
               </div>
             ))}
           </div>

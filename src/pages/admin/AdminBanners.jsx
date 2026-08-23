@@ -9,14 +9,31 @@ import { bannersAPI, uploadsAPI, productsAPI, farmersAPI, categoriesAPI, toList 
 // looks right here is not cropped on a phone.
 const APP_ASPECT_RATIO = 2
 
+// What an admin can point a *new* banner at.
+//
+// `family_pack` is not here, and is not coming back: the curated-pack screens
+// were removed from the website and the app, so a banner aimed at one opens
+// nothing. It stays a legal value in the database — `TARGET_TYPES` in
+// backend/app/models/ad_banner.py is a SQL enum, and dropping a member needs a
+// migration that would break the rows already using it — so old banners keep
+// their value and simply stop being offered as a choice. `targetOptions()`
+// below is what keeps those rows editable.
 const TARGET_TYPES = [
   { value: 'none', label: 'Nothing — display only' },
   { value: 'product', label: 'A product' },
   { value: 'farmer', label: 'A farm' },
-  { value: 'family_pack', label: 'A family pack' },
   { value: 'category', label: 'A category' },
   { value: 'url', label: 'A web page' },
 ]
+
+// A `<select>` whose value matches no option renders blank, and saving that
+// blank would silently rewrite the banner's target. So when a legacy banner is
+// opened for editing, its own type is added to the list — labelled for what it
+// now is — and the admin can leave it alone or repoint it deliberately.
+function targetOptions(current) {
+  if (!current || TARGET_TYPES.some((t) => t.value === current)) return TARGET_TYPES
+  return [...TARGET_TYPES, { value: current, label: 'A family pack (link no longer works)' }]
+}
 
 // Which target types need something picked from a list, and where that list
 // comes from. Keyed by target_type so the form has no branching per type.
@@ -259,7 +276,9 @@ export default function AdminBanners() {
               <label className="form-label">Tapping it opens</label>
               <select className="form-select" value={form.target_type}
                       onChange={(e) => set({ target_type: e.target.value, target_id: '', target_url: '' })}>
-                {TARGET_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                {targetOptions(form.target_type).map((t) => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
               </select>
             </div>
 

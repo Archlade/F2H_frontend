@@ -2,7 +2,17 @@
 <html lang="en-IN">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      `viewport-fit=cover` is not cosmetic — six rules in index.css depend on it.
+
+      On a notched or Dynamic Island iPhone, `env(safe-area-inset-*)` resolves to
+      `0px` unless the viewport opts into covering the full screen. Without it
+      every `calc(… + env(safe-area-inset-bottom))` in the stylesheet quietly
+      evaluated to the same value as no inset at all, so the mobile bottom nav
+      and the sticky order bars sat under the home indicator instead of above
+      it. The CSS was right; it was never being given the numbers.
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="google-site-verification" content="1PbrP9iXsJHlc4xQHSorhLfc94fdmwZwQp5-bN4jGSM" />
 
     <!--

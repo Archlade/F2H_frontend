@@ -7,6 +7,12 @@ import { SocketProvider } from './context/SocketContext'
 import { CartProvider } from './context/CartContext'
 import './index.css'
 import 'leaflet/dist/leaflet.css'
+import { initLayoutDebug } from './utils/layoutDebug'
+
+/* Does nothing unless the URL carries ?layout-debug=1. See utils/layoutDebug.js
+   — it exists because iOS Safari has no developer tools, so this is the only
+   way to see what a phone is actually laying out. */
+initLayoutDebug()
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

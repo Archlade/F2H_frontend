@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, Tractor, ShoppingBag, Tag, FileText,
   Star, Flag, Sparkles, Globe, ClipboardList, Megaphone,
   BarChart2, LogOut, Shield, Menu, X, ChevronRight, ChevronLeft, Boxes, Ticket, Image,
-  Repeat
+  Repeat, SlidersHorizontal
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import MobileBottomNav from '../components/MobileBottomNav'
@@ -35,6 +35,7 @@ const adminNav = [
   { to: '/admin/reviews', label: 'Reviews', icon: Star },
   { to: '/admin/reports', label: 'Reports', icon: Flag },
   { section: 'System' },
+  { to: '/admin/settings', label: 'Settings', icon: SlidersHorizontal },
   { to: '/admin/audit-logs', label: 'Audit Logs', icon: ClipboardList },
 ]
 

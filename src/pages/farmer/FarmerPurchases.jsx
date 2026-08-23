@@ -38,7 +38,7 @@ export default function FarmerPurchases() {
       <div className="flex gap-2 mb-6 border-b pb-2 overflow-x-auto">
         {[
           { key: 'products', label: 'Product orders' },
-          { key: 'packs', label: 'Family packs' },
+          { key: 'packs', label: 'Weekly baskets' },
         ].map(({ key, label }) => (
           <button
             key={key}

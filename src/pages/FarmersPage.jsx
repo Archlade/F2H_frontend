@@ -39,7 +39,7 @@ export default function FarmersPage() {
   }, [search, page])
 
   return (
-    <div className="container section-sm">
+    <div className="container section-sm farmers-page">
       <div style={{ marginBottom: 40 }}>
         <h1 className="text-h1">Local Farmers Near You</h1>
         <p className="text-muted" style={{ marginTop: 8, maxWidth: 640, lineHeight: 1.7 }}>

@@ -80,7 +80,7 @@ export default function WeeklyBasketPage() {
   const ctaPlaceholder = <div style={{ height: 52, marginBottom: 28 }} aria-hidden="true" />
 
   return (
-    <div className="container section-sm">
+    <div className="container section-sm weekly-basket-page">
       <div className="fp-hero">
         <div className="fp-hero__grid">
           <div>
