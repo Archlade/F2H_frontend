@@ -45,7 +45,7 @@ export default function AdminAuditLogs() {
               <tbody>
                 {logs.map((log, idx) => (
                   <tr key={idx}>
-                    <td data-label="Admin">{log.admin}</td>
+                    <td data-label="Admin">{log.admin?.full_name || '—'}</td>
                     <td data-label="Action">{log.action}</td>
                     <td data-label="Entity Type">{log.entity_type}</td>
                     <td data-label="Entity ID">{log.entity_id}</td>

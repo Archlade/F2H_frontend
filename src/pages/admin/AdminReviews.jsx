@@ -59,7 +59,7 @@ export default function AdminReviews() {
               <tbody>
                 {reviews.map(r => (
                   <tr key={r.id}>
-                    <td data-label="Reviewer">{r.reviewer}</td>
+                    <td data-label="Reviewer">{r.reviewer?.full_name || '—'}</td>
                     <td data-label="Content" style={{ maxWidth: 320 }}>{r.content}</td>
                     <td data-label="Rating">{r.rating} / 5</td>
                     <td data-label="Status"><span className={`badge ${r.is_approved ? 'badge-success' : 'badge-error'}`}>{r.is_approved ? 'Approved' : 'Hidden'}</span></td>

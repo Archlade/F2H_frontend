@@ -62,7 +62,7 @@ export default function AdminReports() {
               <tbody>
                 {reports.map(r => (
                   <tr key={r.id}>
-                    <td data-label="Reporter">{r.reporter}</td>
+                    <td data-label="Reporter">{r.reporter?.full_name || '—'}</td>
                     <td data-label="Type">{r.report_type}</td>
                     <td data-label="Reason">{r.reason}</td>
                     <td data-label="Status"><span className={`badge badge-warning`}>{r.status}</span></td>

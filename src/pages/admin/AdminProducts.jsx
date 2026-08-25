@@ -9,6 +9,9 @@ export default function AdminProducts() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
+  // The server's row count, so the Next button can be right rather than
+  // guessing from how many rows came back.
+  const [total, setTotal] = useState(0);
   
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -27,6 +30,7 @@ export default function AdminProducts() {
     try {
       const res = await adminAPI.products({ search: debouncedSearch, page });
       setProducts(toList(res.data));
+      setTotal(res.data?.total ?? 0);
     } catch (err) {
       toast.error('Failed to load products');
     } finally {
@@ -87,6 +91,9 @@ export default function AdminProducts() {
     }
   };
 
+  const PER_PAGE = 20
+  const lastPage = Math.max(1, Math.ceil(total / PER_PAGE))
+
   return (
     <div className="admin-products card">
       <div className="card-header flex-between flex-wrap gap-3">
@@ -122,9 +129,18 @@ export default function AdminProducts() {
                 {products.map(p => (
                   <tr key={p.id}>
                     <td data-label="Name">{p.name}</td>
-                    <td data-label="Farmer">{p.farmer}</td>
-                    <td data-label="Category">{p.category}</td>
-                    <td data-label="Price">${p.price}</td>
+                    {/*
+                      `farmer` and `category` are OBJECTS in Product.to_dict —
+                      {id, full_name, farm_name, avatar_url} and the category's
+                      own to_dict. Rendering either directly throws "Objects are
+                      not valid as a React child" and takes the whole page down,
+                      which is why this screen showed nothing at all.
+                    */}
+                    <td data-label="Farmer">{p.farmer?.farm_name || p.farmer?.full_name || '—'}</td>
+                    <td data-label="Category">{p.category?.name || '—'}</td>
+                    {/* Rupees. This said `${p.price}` — a literal dollar sign
+                        on an Indian marketplace. */}
+                    <td data-label="Price">{p.price != null ? `₹${Number(p.price).toFixed(2)}` : '—'}</td>
                     <td data-label="Status"><span className={`badge ${p.is_approved ? 'badge-success' : 'badge-warning'}`}>{p.is_approved ? 'Approved' : 'Pending'}</span></td>
                     <td data-label="Featured"><span className={`badge ${p.is_featured ? 'badge-info' : ''}`}>{p.is_featured ? 'Yes' : 'No'}</span></td>
                     <td data-label="Actions">
@@ -144,10 +160,13 @@ export default function AdminProducts() {
                 ))}
               </tbody>
             </table>
+            {/* Driven by the server's `total`. This was `products.length < 15`
+                while the API returns 20 a page, so a full page looked like the
+                end of the list and rows 16-20 were unreachable. */}
             <div className="pagination flex flex-between items-center" style={{ marginTop: 20 }}>
               <button className="btn btn-sm btn-secondary touch-target" onClick={() => setPage(pg => Math.max(1, pg - 1))} disabled={page === 1}>Prev</button>
-              <span className="text-sm font-semibold">Page {page}</span>
-              <button className="btn btn-sm btn-secondary touch-target" onClick={() => setPage(pg => pg + 1)} disabled={products.length < 15}>Next</button>
+              <span className="text-sm font-semibold">Page {page} of {lastPage}</span>
+              <button className="btn btn-sm btn-secondary touch-target" onClick={() => setPage(pg => pg + 1)} disabled={page >= lastPage}>Next</button>
             </div>
           </div>
         )}
