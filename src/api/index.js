@@ -332,6 +332,26 @@ export const adminAPI = {
   // the chain is broken. Resolves rather than rejects when push is broken — the
   // failure is the answer, so it comes back in the body with a verdict.
   pushSelfTest: () => api.post('/admin/push/self-test'),
+
+  // ── Delivery partners ──────────────────────────────────────────────────
+  // Accounts are created here rather than by signup: a delivery account can
+  // read customers' addresses and phone numbers, which is not a power to hand
+  // out on a public form.
+  deliveryPartners: () => api.get('/admin/delivery-partners'),
+  createDeliveryPartner: (data) => api.post('/admin/delivery-partners', data),
+
+  // `kind` is 'request' or 'basket' — the two order types live in different
+  // tables and the orders screen lists them together. A null deliveryId
+  // unassigns, which is how an order moves between partners.
+  assignDelivery: (kind, orderId, deliveryId) =>
+    api.patch(`/admin/orders/${kind}/${orderId}/assign`, { delivery_id: deliveryId }),
+
+  // Collected is derived from completed orders; only handovers are stored.
+  // Outstanding is the subtraction, so the two cannot drift apart.
+  deliveryCash: () => api.get('/admin/delivery-cash'),
+  remittances: (id) => api.get(`/admin/delivery-cash/${id}/remittances`),
+  recordRemittance: (id, data) =>
+    api.post(`/admin/delivery-cash/${id}/remittances`, data),
   reviews: (params) => api.get('/admin/reviews', { params }),
   approveReview: (id) => api.patch(`/admin/reviews/${id}/approve`),
   createAnnouncement: (data) => api.post('/admin/announcements', data),

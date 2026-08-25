@@ -1,12 +1,7 @@
 import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import UserAvatar from '../components/UserAvatar'
-import {
-  LayoutDashboard, Users, Tractor, ShoppingBag, Tag, FileText,
-  Star, Flag, Sparkles, Globe, ClipboardList, Megaphone,
-  BarChart2, LogOut, Shield, Menu, X, ChevronRight, ChevronLeft, Boxes, Ticket, Image,
-  Repeat, SlidersHorizontal, Table2
-} from 'lucide-react'
+import { BarChart2, Bike, Boxes, ChevronLeft, ChevronRight, ClipboardList, FileText, Flag, Globe, Image, LayoutDashboard, LogOut, Megaphone, Menu, Repeat, Shield, ShoppingBag, SlidersHorizontal, Sparkles, Star, Table2, Tag, Ticket, Tractor, Users, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import MobileBottomNav from '../components/MobileBottomNav'
 import toast from 'react-hot-toast'
@@ -25,6 +20,9 @@ const adminNav = [
   { to: '/admin/coupons', label: 'Coupons', icon: Ticket },
   { to: '/admin/orders', label: 'All orders', icon: FileText },
   { to: '/admin/requests', label: 'Requests', icon: FileText },
+  // Partners, and the cash they are holding. Under Operations rather
+  // than System: it is a daily job, not a setting.
+  { to: '/admin/delivery', label: 'Delivery', icon: Bike },
 
   { section: 'Content' },
   { to: '/admin/featured', label: 'Featured Content', icon: Sparkles },

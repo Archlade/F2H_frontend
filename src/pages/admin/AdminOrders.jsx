@@ -38,6 +38,9 @@ export default function AdminOrders() {
   const [orders, setOrders] = useState([])
   const [total, setTotal] = useState(0)
   const [status, setStatus] = useState('')
+  // Loaded once for the assign dropdowns. Kept here rather than fetched
+  // per row — fifty orders would otherwise mean fifty identical requests.
+  const [partners, setPartners] = useState([])
   const [loading, setLoading] = useState(true)
   // Bumped to force a refetch after a pickup is recorded, so the row redraws
   // with the payment on it rather than being patched in place.
@@ -60,6 +63,14 @@ export default function AdminOrders() {
       .finally(() => !cancelled && setLoading(false))
     return () => { cancelled = true }
   }, [status, tick])
+
+  useEffect(() => {
+    adminAPI.deliveryPartners()
+      .then((res) => setPartners((res.data || []).filter((p) => p.is_active)))
+      // A failure here costs the dropdown, not the page. The orders are
+      // still readable and every other control still works.
+      .catch(() => {})
+  }, [])
 
   return (
     <div className="section-sm">
@@ -119,6 +130,8 @@ export default function AdminOrders() {
               )}
 
               <FarmerPickup order={o} onChanged={reload} />
+
+              <AssignDelivery order={o} partners={partners} onChanged={reload} />
 
               <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <Party label="Buyer" contact={o.customer} />
@@ -264,6 +277,67 @@ function Party({ label, contact }) {
         </a>
       ) : (
         <span className="text-xs text-muted">no number</span>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Who is carrying this order.
+ *
+ * Only shown for orders that are actually going somewhere. A self-collect order
+ * has no delivery leg, and an order still waiting on the farm has nothing to
+ * carry yet — a dropdown on either is a question with no useful answer.
+ *
+ * Assigning is what gives a delivery account any access to the order at all:
+ * `party_for` on the server reads this field, and an account not named here has
+ * no standing on the row. So this control is not a convenience, it is the
+ * permission grant.
+ */
+function AssignDelivery({ order, partners, onChanged }) {
+  const [busy, setBusy] = useState(false)
+
+  // Nothing to deliver: the customer is collecting it themselves.
+  if (order.purchase_mode === 'pickup') return null
+  // Nothing to carry yet, or nothing left to carry.
+  if (['pending', 'admin_review', 'accepted', 'rejected', 'chat_active',
+       'completed', 'cancelled'].includes(order.status)) return null
+
+  const assign = async (value) => {
+    setBusy(true)
+    try {
+      await adminAPI.assignDelivery(
+        order.order_type, order.id, value === '' ? null : Number(value))
+      toast.success(value === '' ? 'Unassigned' : 'Assigned')
+      onChanged()
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Could not assign that')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2 flex-wrap" style={{ marginTop: 10 }}>
+      <span className="text-xs text-muted" style={{ fontWeight: 600 }}>Delivery</span>
+      <select
+        className="form-input"
+        style={{ maxWidth: 240, padding: '6px 10px', fontSize: 13 }}
+        value={order.assigned_delivery_id ?? ''}
+        disabled={busy}
+        onChange={(e) => assign(e.target.value)}
+      >
+        <option value="">Unassigned</option>
+        {partners.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.full_name}{p.active_orders ? ` · ${p.active_orders} in hand` : ''}
+          </option>
+        ))}
+      </select>
+      {partners.length === 0 && (
+        <span className="text-xs text-muted">
+          No delivery partners yet — add one under Delivery.
+        </span>
       )}
     </div>
   )
