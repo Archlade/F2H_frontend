@@ -66,6 +66,8 @@ import AdminAuditLogs from './pages/admin/AdminAuditLogs'
 import AdminReportsData from './pages/admin/AdminReportsData'
 import AdminSettings from './pages/admin/AdminSettings'
 import AdminDelivery from './pages/admin/AdminDelivery'
+import DeliveryOrders from './pages/delivery/DeliveryOrders'
+import { homeFor } from './utils/roleHome'
 import AdminAnnouncements from './pages/admin/AdminAnnouncements'
 import AdminAnalytics from './pages/admin/AdminAnalytics'
 import AdminBaskets from './pages/admin/AdminBaskets'
@@ -76,18 +78,17 @@ function ProtectedRoute({ children, roles }) {
   const { user, loading } = useAuth()
   if (loading) return <div className="page-loading"><div className="spinner" /></div>
   if (!user) return <Navigate to="/auth" replace />
-  if (roles && !roles.includes(user.role)) return <Navigate to="/" replace />
+  // Refused roles go to their own home, not to `/`. Sending a delivery account
+  // to the public shopfront is how it ended up browsing the marketplace after
+  // every blocked route.
+  if (roles && !roles.includes(user.role)) return <Navigate to={homeFor(user.role)} replace />
   return children
 }
 
 function GuestRoute({ children }) {
   const { user, loading } = useAuth()
   if (loading) return <div className="page-loading"><div className="spinner" /></div>
-  if (user) {
-    if (user.role === 'admin') return <Navigate to="/admin" replace />
-    if (user.role === 'farmer') return <Navigate to="/farmer" replace />
-    return <Navigate to="/dashboard" replace />
-  }
+  if (user) return <Navigate to={homeFor(user.role)} replace />
   return children
 }
 
@@ -196,6 +197,14 @@ export default function App() {
         </Route>
 
         {/* ── Admin ── */}
+        {/* The delivery role has one page and no layout. It is not part of
+            the customer site and must not be reachable from it. */}
+        <Route path="/delivery" element={
+          <ProtectedRoute roles={['delivery', 'admin']}>
+            <DeliveryOrders />
+          </ProtectedRoute>
+        } />
+
         <Route path="/admin" element={
           <ProtectedRoute roles={['admin']}>
             <AdminLayout />
