@@ -3749,3 +3749,36 @@ h1, h2, h3, h4, h5, h6 {
     padding-right: 16px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════
+   REPORT TABLES — Admin → Reports & data
+═══════════════════════════════════════════════════════ */
+
+/*
+   Row shading comes from the server's `_highlight` on each row, which is the
+   same flag that colours the spreadsheet. So a product that has run dry is pink
+   in Excel and pink here, and neither surface decides on its own what counts as
+   worth noticing.
+*/
+.row-warn  { background: #fde7e9; }   /* wrong, or empty — needs acting on */
+.row-note  { background: #fff6da; }   /* unusual, worth a look */
+.row-info  { background: #e8f1fb; }   /* real, but not yet created */
+.row-plain { background: transparent; }
+
+.admin-insights .data-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--color-gray-100);
+}
+
+/* A sixteen-column table is a horizontal scroller by nature; capping the height
+   means the header row and the summary tiles stay put while you scan it, rather
+   than the whole page scrolling away from you. */
+.admin-insights .data-table-wrap {
+  max-height: 62vh;
+  max-height: 62dvh;
+  overflow: auto;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+}

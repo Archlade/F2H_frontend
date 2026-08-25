@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, Tractor, ShoppingBag, Tag, FileText,
   Star, Flag, Sparkles, Globe, ClipboardList, Megaphone,
   BarChart2, LogOut, Shield, Menu, X, ChevronRight, ChevronLeft, Boxes, Ticket, Image,
-  Repeat, SlidersHorizontal
+  Repeat, SlidersHorizontal, Table2
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import MobileBottomNav from '../components/MobileBottomNav'
@@ -35,6 +35,10 @@ const adminNav = [
   { to: '/admin/reviews', label: 'Reviews', icon: Star },
   { to: '/admin/reports', label: 'Reports', icon: Flag },
   { section: 'System' },
+  // Named 'Reports & data' rather than 'Reports': the Moderation section
+  // above already has a 'Reports' entry for flagged content, and two
+  // identically-named links in one sidebar is a coin toss every time.
+  { to: '/admin/insights', label: 'Reports & data', icon: Table2 },
   { to: '/admin/settings', label: 'Settings', icon: SlidersHorizontal },
   { to: '/admin/audit-logs', label: 'Audit Logs', icon: ClipboardList },
 ]

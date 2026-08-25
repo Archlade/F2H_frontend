@@ -317,11 +317,21 @@ export const adminAPI = {
   report: (slug) =>
     api.get(`/admin/reports/${slug}.xlsx`, { responseType: 'blob' }),
 
+  // The same rows the spreadsheet is built from, for rendering on screen.
+  // `/data` on the end because `/admin/reports` already belongs to content
+  // moderation — see the route's docstring.
+  reportData: (slug) => api.get(`/admin/reports/${slug}/data`),
+
   // Rebuild and push to Google Drive now, rather than waiting for the schedule.
   // Distinct from `report` above: that gets a file onto *this* device, these
   // update the copy in Drive that everyone else is looking at.
   publishReports: () => api.post('/admin/reports/publish'),
   publishReport: (slug) => api.post(`/admin/reports/${slug}/publish`),
+
+  // Sends a real push to your own registered devices and reports which link in
+  // the chain is broken. Resolves rather than rejects when push is broken — the
+  // failure is the answer, so it comes back in the body with a verdict.
+  pushSelfTest: () => api.post('/admin/push/self-test'),
   reviews: (params) => api.get('/admin/reviews', { params }),
   approveReview: (id) => api.patch(`/admin/reviews/${id}/approve`),
   createAnnouncement: (data) => api.post('/admin/announcements', data),

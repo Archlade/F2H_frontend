@@ -236,13 +236,44 @@ export default function ProductDetailPage() {
         {/* Images */}
         <div>
           {/* Main image */}
-          <div style={{ borderRadius: 'var(--radius-2xl)', overflow: 'hidden', marginBottom: 12, aspectRatio: '1', background: 'var(--color-gray-100)' }}>
+          <div style={{ position: 'relative', borderRadius: 'var(--radius-2xl)', overflow: 'hidden', marginBottom: 12, aspectRatio: '1', background: 'var(--color-gray-100)' }}>
             {product.images?.length > 0 ? (
-              <img
-                src={mediaUrl(product.images[currentImage]?.image_url)}
-                alt={product.name}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
+              <>
+                {/*
+                  The photo is shown whole, over a blurred copy of itself.
+
+                  This frame is square and a phone photo is not, so `cover` —
+                  which is what this was — filled it by cropping the difference
+                  away. On the page where somebody decides whether to buy, the
+                  produce is the one thing that must not be trimmed to fit.
+
+                  The backdrop is scaled past the edges before blurring: a blur
+                  samples beyond the element's box, where there is nothing, so
+                  an unscaled copy fades out at the sides and leaves a pale
+                  halo. Overshooting moves that fade out of view.
+
+                  aria-hidden and an empty alt, because it is the same picture
+                  twice — a screen reader announcing it a second time as
+                  decoration would be noise.
+                */}
+                <img
+                  src={mediaUrl(product.images[currentImage]?.image_url)}
+                  alt=""
+                  aria-hidden="true"
+                  style={{
+                    position: 'absolute', inset: 0, width: '100%', height: '100%',
+                    objectFit: 'cover', filter: 'blur(24px)', transform: 'scale(1.15)',
+                  }}
+                />
+                {/* Knocks the blur back so it reads as a surface rather than a
+                    second, competing photograph. */}
+                <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.18)' }} />
+                <img
+                  src={mediaUrl(product.images[currentImage]?.image_url)}
+                  alt={product.name}
+                  style={{ position: 'relative', width: '100%', height: '100%', objectFit: 'contain' }}
+                />
+              </>
             ) : (
               <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <ShoppingBag size={60} color="var(--color-gray-300)" />

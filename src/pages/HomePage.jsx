@@ -15,7 +15,7 @@ import { useSeo } from '../utils/seo'
 
 const CATEGORY_ICONS = {
   Vegetables: Leaf, Fruits: Apple, Dairy: Milk, Eggs: Egg,
-  Grains: Wheat, Spices: Flame, Meat: ShoppingBag,
+  Grains: Wheat, Spices: Flame,
   Homemade: Sprout, Seasonal: Star, Honey: Leaf,
 }
 

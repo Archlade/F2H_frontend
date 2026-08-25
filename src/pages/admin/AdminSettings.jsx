@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { CloudUpload, Download, IndianRupee, Loader, RotateCcw, Save, Sheet } from 'lucide-react'
+import { BellRing, CloudUpload, Download, IndianRupee, Loader, RotateCcw, Save, Sheet, Truck } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { adminAPI } from '../../api'
+import { REPORTS } from '../../utils/reports'
 import { usePrivatePageSeo } from '../../utils/seo'
 
 /**
@@ -17,55 +18,100 @@ import { usePrivatePageSeo } from '../../utils/seo'
  * regardless; these exist so the admin is told before they submit, not after.
  */
 
-/**
- * The reports the admin can pull on demand.
- *
- * Slugs match the server's — see `_reports()` in backend/app/routes/cron.py.
- * Adding a third report here needs only a new entry, because the endpoint and
- * the download handler are both slug-driven.
- */
-const REPORTS = [
-  {
-    slug: 'farmer-stock',
-    name: 'Farmers & stock',
-    blurb: 'Every farmer with their products and what is left in stock. Farms '
-      + 'that have listed nothing are included, so you can see who signed up '
-      + 'and never added produce.',
-    cadence: 'every 2 days',
-  },
-  {
-    slug: 'basket-orders',
-    name: 'Upcoming weekly baskets',
-    blurb: 'Basket deliveries due over the next fortnight, one row per product, '
-      + 'with quantity and price. Sort by product to see how much of each thing '
-      + 'has to be sourced.',
-    cadence: 'every 2 days',
-  },
-  {
-    slug: 'buying-plan',
-    name: 'Buying plan',
-    blurb: 'What to buy for the next basket delivery, and from which farm — '
-      + 'cheapest first, with anything short of stock flagged. Built by '
-      + 'matching what the baskets need against what the farms have.',
-    cadence: 'every 2 days',
-  },
-]
-
 const FLOOR = 1
 const CEILING = 10000
+
+// DELIVERY_CHARGE_FLOOR / DELIVERY_CHARGE_CEILING on the server. A delivery
+// costs a van, a driver and a round trip, so below the floor is a fee that does
+// not cover what it is charging for. Charging nothing is done by clearing the
+// field, not by typing 0 — see the helper text on the input.
+const DELIVERY_FLOOR = 50
+const DELIVERY_CEILING = 500
+
+/**
+ * What each self-test outcome means, and what to do about it.
+ *
+ * Keyed by the `verdict` from `push_service.diagnose`. Kept out of the
+ * component because the next-step wording is the actual content here — the
+ * verdict alone is a label, and a label is what the admin already had.
+ */
+const PUSH_VERDICTS = {
+  server: {
+    tone: 'row-warn',
+    headline: 'The server cannot send notifications at all',
+    next: 'Nothing reaches any phone until this is fixed. The reason below comes from the server itself.',
+  },
+  no_devices: {
+    tone: 'row-note',
+    headline: 'No phone is registered to your account',
+    next: 'The app registers a device when you sign in. Open F2H on the phone and sign in — if you were already signed in, sign out and back in — then run this again.',
+  },
+  rejected: {
+    tone: 'row-warn',
+    headline: 'Firebase refused the request',
+    next: 'The credential reached Firebase and was turned away. Usually a service-account key that has been revoked, or one belonging to a different project than the app.',
+  },
+  all_failed: {
+    tone: 'row-warn',
+    headline: 'Every registered device rejected it',
+    next: 'Devices marked "reinstalled" are normal — that token is gone and has now been removed. Sign in on the phone again to register a fresh one.',
+  },
+  sent: {
+    tone: 'row-info',
+    headline: 'Firebase accepted the notification',
+    next: 'The server side is working. If the phone stayed silent the cause is on the handset: notifications turned off for F2H in Android settings, battery optimisation, or Do Not Disturb.',
+  },
+  error: {
+    tone: 'row-warn',
+    headline: 'The test itself failed',
+    next: 'Check the server log — this is a fault in the diagnostic, not necessarily in push.',
+  },
+}
 
 export default function AdminSettings() {
   usePrivatePageSeo('Settings')
 
   const [settings, setSettings] = useState(null)
   const [value, setValue] = useState('')
+  const [delivery, setDelivery] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [savingDelivery, setSavingDelivery] = useState(false)
   // Which report is currently downloading, or null. A single boolean would
   // spin every button at once.
   const [exporting, setExporting] = useState(null)
   // Which report is publishing — or 'all' for the run-everything button.
   const [publishing, setPublishing] = useState(null)
+  const [testingPush, setTestingPush] = useState(false)
+  const [pushResult, setPushResult] = useState(null)
+
+  /**
+   * Send a test notification to your own phone and report where it stopped.
+   *
+   * Push fails in four unrelated ways that look identical from a silent phone,
+   * so the result is a verdict rather than a boolean. See
+   * `push_service.diagnose` for what each one means.
+   *
+   * The endpoint answers 200 even when the send fails — the failure *is* the
+   * result — so the catch below is for the request genuinely not arriving.
+   */
+  const testPush = async () => {
+    setTestingPush(true)
+    setPushResult(null)
+    try {
+      const { data } = await adminAPI.pushSelfTest()
+      setPushResult(data)
+      if (data.verdict === 'sent') {
+        toast.success(`Sent to ${data.delivered} of ${data.attempted} device(s)`)
+      } else {
+        toast(PUSH_VERDICTS[data.verdict]?.headline || 'Push is not working', { icon: '⚠️' })
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Could not reach the server')
+    } finally {
+      setTestingPush(false)
+    }
+  }
 
   /**
    * Rebuild reports and push them to Drive now.
@@ -163,6 +209,12 @@ export default function AdminSettings() {
       // default in grey. Prefilling with the default would make "never set" and
       // "deliberately set to the default" look identical.
       setValue(res.data.is_customised ? String(res.data.min_order_value) : '')
+      // Blank when unset, so the placeholder shows the default in grey.
+      // Prefilling would make "no charge configured" and "deliberately set to
+      // ₹0" look identical — for a delivery fee those are different decisions.
+      setDelivery(
+        res.data.delivery_charge_is_customised ? String(res.data.delivery_charge) : ''
+      )
     } catch {
       toast.error('Could not load settings')
     } finally {
@@ -203,6 +255,40 @@ export default function AdminSettings() {
     if (problem) return
     // An empty field means "use the default", which the API expresses as null.
     save(value.trim() === '' ? null : Number(value))
+  }
+
+  const deliveryProblem = (() => {
+    if (!delivery.trim()) return null       // blank means "use the default"
+    const n = Number(delivery)
+    if (!Number.isFinite(n)) return 'Enter the delivery charge as a number'
+    if (n < DELIVERY_FLOOR || n > DELIVERY_CEILING) {
+      return `Must be between ₹${DELIVERY_FLOOR} and ₹${DELIVERY_CEILING}`
+    }
+    return null
+  })()
+
+  const saveDelivery = async (e) => {
+    e.preventDefault()
+    if (deliveryProblem) return
+    const next = delivery.trim() === '' ? null : Number(delivery)
+
+    setSavingDelivery(true)
+    try {
+      const res = await adminAPI.updateSettings({ delivery_charge: next })
+      setSettings(res.data)
+      setDelivery(
+        res.data.delivery_charge_is_customised ? String(res.data.delivery_charge) : ''
+      )
+      toast.success(
+        res.data.delivery_charge > 0
+          ? `Delivery charge is now ₹${res.data.delivery_charge}`
+          : 'Delivery is now free'
+      )
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Could not save that')
+    } finally {
+      setSavingDelivery(false)
+    }
   }
 
   if (loading) {
@@ -300,6 +386,58 @@ export default function AdminSettings() {
         a cart below the new minimum is told how much more to add.
       </p>
 
+      <form
+        onSubmit={saveDelivery}
+        className="card"
+        style={{ padding: 28, borderRadius: 'var(--radius-2xl)', maxWidth: 560, marginTop: 20 }}
+      >
+        <div className="flex items-center gap-2" style={{ marginBottom: 6 }}>
+          <Truck size={18} className="text-muted" />
+          <h2 className="text-h4">Delivery charge</h2>
+        </div>
+        <p className="text-sm text-muted" style={{ lineHeight: 1.6, marginBottom: 8 }}>
+          A flat fee added at checkout. Charged once per order however many items
+          are in the basket — a five-item cart pays it once, not five times.
+          Orders the customer collects from the farm are not charged it at all.
+        </p>
+        <p className="text-sm text-muted" style={{ lineHeight: 1.6, marginBottom: 18 }}>
+          It goes to F2H in full. The farmer is paid their share of the produce
+          only, so raising this does not change what any farmer is owed.
+        </p>
+
+        <div className="form-group">
+          <label className="form-label" htmlFor="delivery-charge">Amount in rupees</label>
+          <input
+            id="delivery-charge"
+            className="form-input touch-target"
+            type="number"
+            inputMode="decimal"
+            min={DELIVERY_FLOOR}
+            max={DELIVERY_CEILING}
+            step="1"
+            value={delivery}
+            onChange={(e) => setDelivery(e.target.value)}
+            placeholder={`${settings?.delivery_charge_default ?? 0} (default)`}
+            aria-describedby="delivery-help"
+          />
+          <small id="delivery-help" className="text-muted" style={{ display: 'block', marginTop: 6 }}>
+            {deliveryProblem
+              ? <span style={{ color: 'var(--color-error)' }}>{deliveryProblem}</span>
+              : settings?.delivery_charge_is_customised
+                ? <>Currently ₹{settings.delivery_charge}. Clear the field to stop charging for delivery.</>
+                : <>No delivery charge is being applied. Type a number from ₹{DELIVERY_FLOOR} upwards to start charging one.</>}
+          </small>
+        </div>
+
+        <button
+          type="submit"
+          className="btn btn-primary touch-target"
+          disabled={savingDelivery || !!deliveryProblem}
+        >
+          <Save size={16} /> {savingDelivery ? 'Saving…' : 'Save'}
+        </button>
+      </form>
+
       {REPORTS.map(({ slug, name, blurb, cadence }) => (
         <div
           key={slug}
@@ -368,6 +506,102 @@ export default function AdminSettings() {
           <CloudUpload size={16} />
           {publishing === 'all' ? 'Publishing all three…' : 'Publish all three to Drive'}
         </button>
+      </div>
+
+      <div
+        className="card"
+        style={{ padding: 28, borderRadius: 'var(--radius-2xl)', maxWidth: 560, marginTop: 20 }}
+      >
+        <div className="flex items-center gap-2" style={{ marginBottom: 6 }}>
+          <BellRing size={18} className="text-muted" />
+          <h2 className="text-h4">Test notifications</h2>
+        </div>
+        <p className="text-sm text-muted" style={{ lineHeight: 1.6, marginBottom: 18 }}>
+          Sends a real notification to your own phone, down the same code path
+          every order update uses. A phone that stays quiet looks the same
+          whether the server has no credentials, no device is registered, or
+          Android is holding the notification back — this says which.
+        </p>
+
+        <button
+          type="button"
+          className="btn btn-secondary touch-target"
+          onClick={testPush}
+          disabled={testingPush}
+        >
+          <BellRing size={16} />
+          {testingPush ? 'Sending…' : 'Send a test notification'}
+        </button>
+
+        {pushResult && (() => {
+          const verdict = PUSH_VERDICTS[pushResult.verdict] || PUSH_VERDICTS.error
+          return (
+            <div
+              className={verdict.tone}
+              style={{ marginTop: 18, padding: 16, borderRadius: 'var(--radius-lg)' }}
+            >
+              <p style={{ fontWeight: 600, marginBottom: 6 }}>{verdict.headline}</p>
+
+              {pushResult.verdict === 'sent' && (
+                <p className="text-sm" style={{ marginBottom: 8 }}>
+                  Delivered to {pushResult.delivered} of {pushResult.attempted} registered device
+                  {pushResult.attempted === 1 ? '' : 's'}.
+                </p>
+              )}
+
+              {pushResult.push_problem && (
+                <p className="text-sm" style={{ marginBottom: 8, fontFamily: 'monospace' }}>
+                  {pushResult.push_problem}
+                </p>
+              )}
+
+              <p className="text-sm" style={{ lineHeight: 1.6 }}>{verdict.next}</p>
+
+              {/*
+                The one result that looks like success and is not. Real
+                notifications are dispatched to a background task; this test
+                sends synchronously. So FCM can be healthy, the tokens current,
+                and still nothing is ever sent — see `background_tasks_run`.
+              */}
+              {pushResult.background_ok === false && (
+                <p
+                  className="text-sm"
+                  style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(0,0,0,.12)', lineHeight: 1.6 }}
+                >
+                  <strong>But real notifications are not being sent.</strong>{' '}
+                  The server can talk to Firebase, yet background tasks never
+                  run{pushResult.async_mode ? ` (async_mode is "${pushResult.async_mode}")` : ''} —
+                  so every automatic notification is queued and abandoned. The
+                  backend has to be started by <code>python run.py</code>, which
+                  calls <code>eventlet.monkey_patch()</code>. Served any other
+                  way, this test still passes and nothing else does.
+                </p>
+              )}
+
+              {pushResult.failures?.length > 0 && (
+                <ul className="text-sm" style={{ marginTop: 10, paddingLeft: 18 }}>
+                  {pushResult.failures.map((f, i) => (
+                    <li key={i} style={{ marginBottom: 4 }}>
+                      {f.platform || 'device'} — {f.dead ? 'app was reinstalled or removed (token retired)' : f.error}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {/* Shown for every verdict, because "which phones does the server
+                  think I have" is the question behind most of them — and an
+                  account with three stale rows and no current one explains a
+                  silence that otherwise looks like a server fault. */}
+              {pushResult.devices?.length > 0 && (
+                <p className="text-xs text-muted" style={{ marginTop: 10 }}>
+                  Registered: {pushResult.devices.map((d) => (
+                    `${d.platform || 'unknown'}${d.last_seen_at ? `, last seen ${new Date(d.last_seen_at).toLocaleDateString()}` : ''}`
+                  )).join(' · ')}
+                </p>
+              )}
+            </div>
+          )
+        })()}
       </div>
     </div>
   )

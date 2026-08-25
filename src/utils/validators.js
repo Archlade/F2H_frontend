@@ -118,10 +118,11 @@ export function addressProblem(state, postalCode) {
 }
 
 /**
- * Reduce a typed Indian number to its bare 10 digits, or null.
+ * Reduce a typed number to its bare 10 digits, or null.
  *
- * The country code and trunk prefix are stripped rather than rejected — a form
- * that refuses "+91…" is a form people retype in irritation.
+ * The country code and trunk prefix are stripped rather than rejected — people
+ * write the same number as `9876543210`, `+91 98765 43210` and `098765 43210`,
+ * and a form that refuses two of the three is a form they retype in irritation.
  */
 export function normalisePhone(phone) {
   let digits = (phone || '').replace(/\D/g, '')
@@ -130,12 +131,22 @@ export function normalisePhone(phone) {
   return digits || null
 }
 
-/** A human-readable problem with the phone number, or null. */
+/**
+ * A human-readable problem with the phone number, or null.
+ *
+ * Ten digits — that is the whole rule. The first digit is deliberately not
+ * checked: requiring 6–9 meant requiring an Indian mobile, which refused
+ * landlines and anyone signing up from outside India. The length check catches
+ * what that rule was really for — a typo or a half-typed number — without
+ * deciding what kind of phone somebody is allowed to own.
+ *
+ * Mirrors `phone_problem` in backend/app/utils/validators.py, which is the one
+ * that decides. Change them together.
+ */
 export function phoneProblem(phone) {
   if (!(phone || '').trim()) return 'Phone number is required'
   const digits = normalisePhone(phone)
   if (!digits) return 'Phone number is required'
-  if (digits.length !== 10) return 'Enter a 10-digit mobile number'
-  if (!'6789'.includes(digits[0])) return 'An Indian mobile number starts with 6, 7, 8 or 9'
+  if (digits.length !== 10) return 'Enter a 10-digit phone number'
   return null
 }

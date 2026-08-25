@@ -41,6 +41,29 @@ export default function CartPage() {
   const [notes, setNotes] = useState('')
   const [placing, setPlacing] = useState(false)
 
+  // The server charges no delivery on a pickup order, so the summary must not
+  // quote one. `cart.delivery_charge` is always the delivery figure — the API
+  // has no idea which mode this page is sitting on — so the choice is applied
+  // here and re-decided server-side at checkout, which is the read that counts.
+  const delivery = mode === 'pickup' ? 0 : Number(cart.delivery_charge || 0)
+  const payable = Number(cart.subtotal || 0) + delivery
+
+  /**
+   * Change a line's quantity, and say so when the server refuses.
+   *
+   * The stepper buttons called `updateItem` bare. `CartContext.wrap` does not
+   * catch, so any refusal — below the product's minimum, more than is in stock
+   * — became an unhandled rejection: nothing on screen, nothing in the cart,
+   * and the customer pressing a button that appears to do nothing.
+   */
+  const changeQuantity = async (itemId, quantity) => {
+    try {
+      await updateItem(itemId, quantity)
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Could not update that quantity')
+    }
+  }
+
   useEffect(() => {
     locationsAPI.getAddresses()
       .then(res => {
@@ -57,7 +80,7 @@ export default function CartPage() {
       return toast.error('Choose a delivery address first')
     }
     if (!window.confirm(
-      `Place ${cart.count} order${cart.count === 1 ? '' : 's'} for ₹${cart.subtotal.toFixed(2)}?\n\n` +
+      `Place ${cart.count} order${cart.count === 1 ? '' : 's'} for ₹${payable.toFixed(2)}?\n\n` +
       'Each farm prepares its own order. Once a farmer confirms, that order ' +
       'cannot be cancelled. Payment is cash on delivery.'
     )) return
@@ -117,7 +140,7 @@ export default function CartPage() {
                 <button
                   type="button"
                   className="fp-product-card__qty-btn"
-                  onClick={() => updateItem(item.id, item.quantity - 0.5)}
+                  onClick={() => changeQuantity(item.id, item.quantity - 0.5)}
                   aria-label="Reduce quantity"
                 >
                   <Minus size={14} />
@@ -126,7 +149,7 @@ export default function CartPage() {
                 <button
                   type="button"
                   className="fp-product-card__qty-btn"
-                  onClick={() => updateItem(item.id, item.quantity + 0.5)}
+                  onClick={() => changeQuantity(item.id, item.quantity + 0.5)}
                   aria-label="Increase quantity"
                 >
                   <Plus size={14} />
@@ -162,9 +185,35 @@ export default function CartPage() {
       </div>
 
       <div className="card" style={{ padding: 18, borderRadius: 'var(--radius-lg)' }}>
+        {/*
+          The breakdown appears only when there is a fee to break down. A
+          "Delivery ₹0.00" line on every cart is noise, and it reads as
+          something having failed to load rather than as nothing being charged.
+        */}
+        {delivery > 0 && (
+          <>
+            <div className="flex items-center justify-between text-sm text-muted" style={{ marginBottom: 4 }}>
+              <span>Subtotal</span>
+              <span>₹{Number(cart.subtotal).toFixed(2)}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm text-muted" style={{ marginBottom: 8 }}>
+              <span>Delivery</span>
+              <span>₹{delivery.toFixed(2)}</span>
+            </div>
+            <div style={{ borderTop: '1px solid var(--color-gray-200)', marginBottom: 8 }} />
+          </>
+        )}
+
         <div className="flex items-center justify-between" style={{ marginBottom: 6 }}>
           <span className="font-bold">Total</span>
-          <span className="text-h4">₹{Number(cart.subtotal).toFixed(2)}</span>
+          {/*
+            `total` rather than `subtotal`, and computed server-side. The
+            website and the app both showing a figure they added up themselves
+            is how the two come to disagree by a paisa on the same basket.
+            Falls back to the subtotal so a build talking to a server without
+            this field shows the produce total rather than ₹0.00.
+          */}
+          <span className="text-h4">₹{payable.toFixed(2)}</span>
         </div>
 
         {!cart.meets_minimum && (
@@ -226,7 +275,7 @@ export default function CartPage() {
           disabled={placing || !cart.meets_minimum || cart.has_problems}
           onClick={placeOrder}
         >
-          {placing ? 'Placing…' : `Place order · ₹${Number(cart.subtotal).toFixed(2)}`}
+          {placing ? 'Placing…' : `Place order · ₹${payable.toFixed(2)}`}
         </button>
       </div>
     </div>

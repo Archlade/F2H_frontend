@@ -63,6 +63,7 @@ import AdminFeaturedContent from './pages/admin/AdminFeaturedContent'
 import AdminHomepage from './pages/admin/AdminHomepage'
 import AdminBanners from './pages/admin/AdminBanners'
 import AdminAuditLogs from './pages/admin/AdminAuditLogs'
+import AdminReportsData from './pages/admin/AdminReportsData'
 import AdminSettings from './pages/admin/AdminSettings'
 import AdminAnnouncements from './pages/admin/AdminAnnouncements'
 import AdminAnalytics from './pages/admin/AdminAnalytics'
@@ -214,6 +215,7 @@ export default function App() {
           <Route path="featured" element={<AdminFeaturedContent />} />
           <Route path="homepage" element={<AdminHomepage />} />
           <Route path="banners" element={<AdminBanners />} />
+          <Route path="insights" element={<AdminReportsData />} />
           <Route path="settings" element={<AdminSettings />} />
           <Route path="audit-logs" element={<AdminAuditLogs />} />
           <Route path="announcements" element={<AdminAnnouncements />} />
