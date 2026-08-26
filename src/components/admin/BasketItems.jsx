@@ -110,6 +110,19 @@ export default function BasketItems() {
     }
   }
 
+  // Copied out of the live FileList *before* the input is cleared.
+  // `e.target.files` is a live reference, so resetting the value first empties
+  // the very list being passed on and the upload silently does nothing.
+  // Clearing at all is what lets the same file be re-picked after a failure.
+  //
+  // A named handler rather than an inline arrow: it is three statements, and
+  // the comment explaining them has nowhere legal to live inside a JSX tag.
+  const handlePick = (e) => {
+    const picked = Array.from(e.target.files || [])
+    e.target.value = ''
+    addImages(picked)
+  }
+
   const removeImage = (index) =>
     setForm((prev) => ({ ...prev, images: prev.images.filter((_, i) => i !== index) }))
 
@@ -288,12 +301,7 @@ export default function BasketItems() {
                     multiple
                     hidden
                     disabled={uploading}
-                    // Copied out of the live FileList *before* the input is
-                    // cleared. `e.target.files` is a live reference, so
-                    // resetting value first empties the very list being passed
-                    // on and the upload silently does nothing. Clearing at all
-                    // is what lets the same file be re-picked after a failure.
-                    onChange={(e) => { const picked = Array.from(e.target.files || []); e.target.value = ''; addImages(picked) }}
+                    onChange={handlePick}
                   />
                 </label>
               )}
