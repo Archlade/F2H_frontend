@@ -101,6 +101,16 @@ export default function AdminBaskets() {
   const [status, setStatus] = useState('pending')
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState(null)
+  const [partners, setPartners] = useState([])
+
+  // Fetched once, not per basket. The list is short and does not change while
+  // an admin works through a page of baskets.
+  useEffect(() => {
+    adminAPI.deliveryPartners()
+      .then((res) => setPartners(toList(res.data)))
+      // Silent: the rest of the page works without it, and the select says so.
+      .catch(() => {})
+  }, [])
 
   const fetchSubs = useCallback(async () => {
     setLoading(true)
@@ -268,6 +278,12 @@ export default function AdminBaskets() {
                   </div>
                 </div>
 
+                <BasketCourier
+                  subscription={s}
+                  partners={partners}
+                  onChanged={fetchSubs}
+                />
+
                 {s.customer_message && (
                   <p className="text-sm text-muted" style={{ marginTop: 4 }}>
                     &ldquo;{s.customer_message}&rdquo;
@@ -332,6 +348,70 @@ export default function AdminBaskets() {
             )
           })}
         </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * The courier who normally carries this basket.
+ *
+ * Set once here and every delivery generated from this subscription arrives
+ * already allocated, rather than an admin picking the same name for the same
+ * customer every week.
+ *
+ * Deliveries already generated are untouched — some are out on a van, and
+ * silently moving those would change who is accountable for cash already
+ * collected. Reassign an individual week on the orders page.
+ *
+ * Cancelled baskets generate nothing, so there is nothing to allocate.
+ */
+function BasketCourier({ subscription, partners, onChanged }) {
+  const [busy, setBusy] = useState(false)
+
+  if (subscription.status === 'cancelled') return null
+
+  const assign = async (value) => {
+    setBusy(true)
+    try {
+      await adminAPI.assignBasketCourier(
+        subscription.id, value === '' ? null : Number(value))
+      toast.success(value === ''
+        ? 'Standing courier cleared'
+        : 'Assigned — from the next delivery onwards')
+      onChanged()
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Could not assign that')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2 flex-wrap" style={{ marginTop: 10 }}>
+      <span className="text-xs text-muted" style={{ fontWeight: 600 }}>
+        Delivered by
+      </span>
+      <select
+        className="form-input"
+        style={{ maxWidth: 240, padding: '6px 10px', fontSize: 13 }}
+        value={subscription.assigned_delivery_id ?? ''}
+        disabled={busy}
+        onChange={(e) => assign(e.target.value)}
+      >
+        <option value="">Nobody yet</option>
+        {partners.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.full_name}{p.active_orders ? ` · ${p.active_orders} in hand` : ''}
+          </option>
+        ))}
+      </select>
+      {partners.length === 0 ? (
+        <span className="text-xs text-muted">
+          No delivery partners yet — add one under Delivery.
+        </span>
+      ) : (
+        <span className="text-xs text-muted">applies from the next delivery</span>
       )}
     </div>
   )

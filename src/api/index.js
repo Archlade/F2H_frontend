@@ -358,6 +358,12 @@ export const adminAPI = {
   // `kind` is 'request' or 'basket' — the two order types live in different
   // tables and the orders screen lists them together. A null deliveryId
   // unassigns, which is how an order moves between partners.
+  // A standing courier for a weekly basket. Applies to deliveries generated
+  // from now on; ones already created keep whoever they had.
+  assignBasketCourier: (subscriptionId, deliveryId) =>
+    api.patch(`/admin/family-pack-subscriptions/${subscriptionId}/assign`,
+              { delivery_id: deliveryId }),
+
   assignDelivery: (kind, orderId, deliveryId) =>
     api.patch(`/admin/orders/${kind}/${orderId}/assign`, { delivery_id: deliveryId }),
 
