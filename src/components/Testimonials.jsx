@@ -80,9 +80,15 @@ export default function Testimonials() {
                 </blockquote>
               )}
               {/* First name and initial — that is all the API sends, and all
-                  anybody agreed to have on a public page. */}
+                  anybody agreed to have on a public page. The role is worth
+                  showing: a farmer saying F2H sells what they grow carries
+                  differently from a shopper praising the vegetables, and the
+                  old fallback called every author a customer. */}
               <figcaption className="text-xs text-muted" style={{ marginTop: 12, fontWeight: 600 }}>
-                {r.author?.display_name || 'A customer'}
+                {r.author?.display_name || 'Someone who uses F2H'}
+                {r.author?.role === 'farmer' && (
+                  <span style={{ fontWeight: 500 }}> · Farmer</span>
+                )}
               </figcaption>
             </figure>
           ))}

@@ -11,7 +11,10 @@ import { serviceReviewsAPI } from '../api'
  * rating; this is about the whole experience and, once approved, appears on
  * the homepage.
  *
- * One per customer. Opening this when you have already left feedback loads it
+ * One per account — customers and farmers alike, both of whom deal with the
+ * service and are offered this on their own dashboard.
+ *
+ * Opening this when you have already left feedback loads it
  * for editing rather than offering a blank form, because a second opinion of
  * the same service from the same person is not a second review — and the
  * server would replace it anyway.

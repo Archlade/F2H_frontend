@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Package, ShoppingCart, DollarSign, AlertTriangle, Loader, Plus, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
+import ServiceReviewForm from '../../components/ServiceReviewForm';
 
 const FarmerDashboard = () => {
   const { user } = useAuth();
@@ -124,6 +125,13 @@ const FarmerDashboard = () => {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Last on the page, as on the customer dashboard. A farmer opens this
+          to check requests and stock, not to review us; asking before they
+          have found what they came for is how a feedback box gets ignored. */}
+      <div style={{ marginTop: 24, maxWidth: 640 }}>
+        <ServiceReviewForm />
       </div>
     </div>
   );
