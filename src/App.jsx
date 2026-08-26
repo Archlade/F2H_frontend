@@ -69,6 +69,7 @@ import AdminDelivery from './pages/admin/AdminDelivery'
 import AdminServiceReviews from './pages/admin/AdminServiceReviews'
 import DeliveryOrders from './pages/delivery/DeliveryOrders'
 import { homeFor } from './utils/roleHome'
+import { PASSWORD_RESET_ENABLED } from './config/features'
 import AdminAnnouncements from './pages/admin/AdminAnnouncements'
 import AdminAnalytics from './pages/admin/AdminAnalytics'
 import AdminBaskets from './pages/admin/AdminBaskets'
@@ -132,7 +133,16 @@ export default function App() {
 
         {/* ── Auth ── */}
         <Route path="/auth" element={<GuestRoute><AuthPage /></GuestRoute>} />
-        <Route path="/forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
+        {/* Hiding the links is not enough on its own: a bookmark or a typed URL
+            still reaches the form, which would take an email address and
+            promise a message nothing sends. Kept as a route rather than deleted
+            so restoring it is one flag. */}
+        <Route
+          path="/forgot-password"
+          element={PASSWORD_RESET_ENABLED
+            ? <GuestRoute><ForgotPasswordPage /></GuestRoute>
+            : <Navigate to="/auth" replace />}
+        />
         {/* Not behind GuestRoute: a signed-in user following a reset link from
             their inbox should still be able to complete it. */}
         <Route path="/reset-password" element={<ResetPasswordPage />} />

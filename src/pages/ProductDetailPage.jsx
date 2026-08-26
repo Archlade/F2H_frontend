@@ -312,6 +312,7 @@ export default function ProductDetailPage() {
             <span className="badge badge-info">{product.category?.name}</span>
             {product.is_organic && <span className="badge badge-success">Organic</span>}
             {product.is_natural && <span className="badge badge-success">Natural</span>}
+            {product.is_homemade && <span className="badge badge-success">Home made</span>}
             {product.is_farm_grown && <span className="badge badge-gray">Farm Grown</span>}
             {hasDiscount && <span className="badge badge-error">-{discountPct}% OFF</span>}
           </div>

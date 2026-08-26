@@ -4,6 +4,7 @@ import { AlertCircle, ArrowRight, Eye, EyeOff } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { authAPI } from '../api'
 import { useAuth } from '../context/AuthContext'
+import { PASSWORD_RESET_ENABLED } from '../config/features'
 
 // Mirrors the server's rules in backend/app/utils/validators.py so the user
 // finds out before submitting.
@@ -121,9 +122,19 @@ export default function ResetPasswordPage() {
             </div>
             <h1 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: 10 }}>Link no longer valid</h1>
             <p className="text-muted" style={{ lineHeight: 1.7, marginBottom: 28 }}>{tokenError}</p>
-            <Link to="/forgot-password" className="btn btn-primary btn-lg w-full">
-              Request a new link <ArrowRight size={18} />
-            </Link>
+            {/* Only offered when a new link could actually be sent. This screen
+                is reached from an emailed link, so it still opens with reset
+                switched off — an expired token must not dead-end into a button
+                that sends nothing. */}
+            {PASSWORD_RESET_ENABLED ? (
+              <Link to="/forgot-password" className="btn btn-primary btn-lg w-full">
+                Request a new link <ArrowRight size={18} />
+              </Link>
+            ) : (
+              <Link to="/auth" className="btn btn-primary btn-lg w-full">
+                Back to sign in <ArrowRight size={18} />
+              </Link>
+            )}
           </>
         ) : (
           <>

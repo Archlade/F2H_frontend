@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Package, Pencil, Plus, X } from 'lucide-react'
+import { ImagePlus, Package, Pencil, Plus, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-import { adminAPI, categoriesAPI, toList } from '../../api'
+import { adminAPI, categoriesAPI, toList, uploadsAPI } from '../../api'
+import { IMAGE_ACCEPT, MAX_UPLOAD_MB, isProbablyImage, mediaUrl, prepareImagesForUpload } from '../../utils/image'
 
 /**
  * The produce F2H sells inside a weekly basket.
@@ -21,7 +22,11 @@ import { adminAPI, categoriesAPI, toList } from '../../api'
 
 const money = (n) => `₹${Number(n || 0).toFixed(2)}`
 
-const BLANK = { name: '', price: '', unit: 'kg', category_id: '', min_quantity: '1', description: '' }
+const BLANK = { name: '', price: '', unit: 'kg', category_id: '', min_quantity: '1', description: '', images: [] }
+
+// The basket builder shows a photo per item; without one it falls back to a
+// grey placeholder, which reads as "not really on sale".
+const MAX_IMAGES = 5
 
 // The units produce is actually sold in here. A free-text box produced "Kg",
 // "kg", "KG" and "kilo" in the same catalogue, and the basket builder shows
@@ -35,6 +40,7 @@ export default function BasketItems() {
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState(null)      // null = closed; object = open
   const [editingId, setEditingId] = useState(null)
+  const [uploading, setUploading] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -68,8 +74,44 @@ export default function BasketItems() {
       category_id: item.category?.id || item.category_id || '',
       min_quantity: String(item.min_quantity ?? '1'),
       description: item.description || '',
+      // The API returns image objects; the form works in plain URLs, same as
+      // the farmer product form.
+      images: (item.images || []).map((img) => (typeof img === 'string' ? img : img.image_url)),
     })
   }
+
+  const addImages = async (fileList) => {
+    const files = Array.from(fileList || [])
+    if (files.length === 0) return
+
+    const notImage = files.find((f) => !isProbablyImage(f))
+    if (notImage) return toast.error(`${notImage.name} is not an image`)
+
+    setUploading(true)
+    try {
+      // Downscales and converts HEIC in the browser first — phone photos are
+      // routinely 8 MB and the server caps at 10.
+      const prepared = await prepareImagesForUpload(files)
+
+      // Size checked *after* preparing, not before: a 12 MB iPhone photo that
+      // downscales to 2 MB is fine, and rejecting it on its original size would
+      // refuse most photos taken on a phone.
+      const tooBig = prepared.find((f) => f.size > MAX_UPLOAD_MB * 1024 * 1024)
+      if (tooBig) return toast.error(`"${tooBig.name}" is larger than ${MAX_UPLOAD_MB}MB`)
+
+      const urls = await Promise.all(prepared.map((f) => uploadsAPI.uploadImage(f, 'products')))
+      const added = urls.map((r) => r.data.url || r.data.image_url).filter(Boolean)
+      setForm((prev) => ({ ...prev, images: [...(prev.images || []), ...added].slice(0, MAX_IMAGES) }))
+      toast.success(added.length === 1 ? 'Photo added' : `${added.length} photos added`)
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Could not upload that photo')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const removeImage = (index) =>
+    setForm((prev) => ({ ...prev, images: prev.images.filter((_, i) => i !== index) }))
 
   const submit = async (e) => {
     e.preventDefault()
@@ -80,6 +122,9 @@ export default function BasketItems() {
         price: Number(form.price),
         min_quantity: Number(form.min_quantity),
         category_id: Number(form.category_id),
+        // The API's documented key. Always sent, so clearing the last photo on
+        // an edit actually removes it rather than being read as "unchanged".
+        image_urls: form.images || [],
       }
       if (editingId) {
         await adminAPI.updateBasketItem(editingId, payload)
@@ -199,7 +244,67 @@ export default function BasketItems() {
                    placeholder="Shown under the name in the basket builder" />
           </div>
 
-          <button type="submit" className="btn btn-primary touch-target" style={{ marginTop: 16 }} disabled={saving}>
+          <div className="form-group" style={{ marginTop: 14 }}>
+            <label className="form-label">Photos</label>
+            <div className="flex flex-wrap gap-2" style={{ alignItems: 'center' }}>
+              {form.images?.map((url, i) => (
+                <div key={url + i} style={{ position: 'relative' }}>
+                  <img
+                    src={mediaUrl(url)}
+                    alt=""
+                    style={{
+                      width: 76, height: 76, objectFit: 'cover',
+                      borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-gray-200)',
+                    }}
+                  />
+                  {/* First photo is the one the basket builder shows. */}
+                  {i === 0 && (
+                    <span className="text-xs" style={{
+                      position: 'absolute', left: 0, bottom: 0, right: 0,
+                      background: 'rgba(0,0,0,0.55)', color: '#fff', textAlign: 'center',
+                      borderBottomLeftRadius: 'var(--radius-lg)',
+                      borderBottomRightRadius: 'var(--radius-lg)',
+                    }}>Main</span>
+                  )}
+                  <button
+                    type="button"
+                    aria-label="Remove photo"
+                    onClick={() => removeImage(i)}
+                    style={{
+                      position: 'absolute', top: -6, right: -6, width: 22, height: 22,
+                      borderRadius: '50%', border: 'none', cursor: 'pointer',
+                      background: 'var(--color-error)', color: '#fff', lineHeight: 1,
+                    }}
+                  ><X size={12} /></button>
+                </div>
+              ))}
+
+              {(form.images?.length || 0) < MAX_IMAGES && (
+                <label className="btn btn-secondary touch-target" style={{ cursor: 'pointer', margin: 0 }}>
+                  <ImagePlus size={15} /> {uploading ? 'Uploading…' : 'Add photo'}
+                  <input
+                    type="file"
+                    accept={IMAGE_ACCEPT}
+                    multiple
+                    hidden
+                    disabled={uploading}
+                    // Copied out of the live FileList *before* the input is
+                    // cleared. `e.target.files` is a live reference, so
+                    // resetting value first empties the very list being passed
+                    // on and the upload silently does nothing. Clearing at all
+                    // is what lets the same file be re-picked after a failure.
+                    onChange={(e) => { const picked = Array.from(e.target.files || []); e.target.value = ''; addImages(picked) }}
+                  />
+                </label>
+              )}
+            </div>
+            <small className="text-muted" style={{ display: 'block', marginTop: 6 }}>
+              Optional, up to {MAX_IMAGES}. The first is shown in the basket builder.
+            </small>
+          </div>
+
+          <button type="submit" className="btn btn-primary touch-target" style={{ marginTop: 16 }}
+                  disabled={saving || uploading}>
             {saving ? 'Saving…' : editingId ? 'Save changes' : 'Add to baskets'}
           </button>
         </form>
@@ -228,10 +333,38 @@ export default function BasketItems() {
               {live.map((item) => (
                 <tr key={item.id}>
                   <td>
-                    <div className="font-bold text-dark">{item.name}</div>
-                    {item.description && (
-                      <div className="text-xs text-muted">{item.description}</div>
-                    )}
+                    <div className="flex items-center gap-3">
+                      {/* Shown here so an item with no photo is obvious at a
+                          glance — that is what the builder falls back on. */}
+                      {item.primary_image ? (
+                        <img
+                          src={mediaUrl(item.primary_image)}
+                          alt=""
+                          style={{
+                            width: 40, height: 40, objectFit: 'cover', flexShrink: 0,
+                            borderRadius: 'var(--radius-md)',
+                            border: '1px solid var(--color-gray-200)',
+                          }}
+                        />
+                      ) : (
+                        <div
+                          title="No photo"
+                          style={{
+                            width: 40, height: 40, flexShrink: 0, display: 'flex',
+                            alignItems: 'center', justifyContent: 'center',
+                            borderRadius: 'var(--radius-md)',
+                            background: 'var(--color-gray-100)',
+                            color: 'var(--color-gray-400)',
+                          }}
+                        ><Package size={16} /></div>
+                      )}
+                      <div>
+                        <div className="font-bold text-dark">{item.name}</div>
+                        {item.description && (
+                          <div className="text-xs text-muted">{item.description}</div>
+                        )}
+                      </div>
+                    </div>
                   </td>
                   <td className="text-muted">{item.category?.name || '—'}</td>
                   <td style={{ textAlign: 'right' }}>{money(item.price)} / {item.unit}</td>

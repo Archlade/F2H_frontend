@@ -17,7 +17,7 @@ const FarmerProductForm = () => {
   const [formData, setFormData] = useState({
     name: '', category_id: '', description: '', price: '', unit: 'kg', 
     min_quantity: 1, available_quantity: 0, low_stock_threshold: 5,
-    is_organic: false, is_natural: false, delivery_available: true, pickup_available: true,
+    is_organic: false, is_natural: false, is_homemade: false, delivery_available: true, pickup_available: true,
     images: [], is_active: true
   });
 
@@ -126,10 +126,18 @@ const FarmerProductForm = () => {
             <div>
               <label className="block text-sm font-medium mb-1">Unit *</label>
               <select name="unit" value={formData.unit} onChange={handleChange} className="w-full border p-2 rounded">
+                {/* Same list the basket-item form uses. Milk, honey, oils and
+                    juices had no unit that fitted — the closest was "piece",
+                    which prices a litre of honey as one object. */}
                 <option value="kg">kg</option>
+                <option value="g">g</option>
+                <option value="litre">litre</option>
+                <option value="ml">ml</option>
                 <option value="lb">lb</option>
                 <option value="piece">piece</option>
                 <option value="bunch">bunch</option>
+                <option value="dozen">dozen</option>
+                <option value="packet">packet</option>
                 <option value="box">box</option>
               </select>
             </div>
@@ -149,6 +157,9 @@ const FarmerProductForm = () => {
           <div className="grid grid-cols-2 gap-4">
             <label className="flex items-center gap-2"><input type="checkbox" name="is_organic" checked={formData.is_organic} onChange={handleChange} /> Organic Certified</label>
             <label className="flex items-center gap-2"><input type="checkbox" name="is_natural" checked={formData.is_natural} onChange={handleChange} /> 100% Natural</label>
+            {/* Made rather than grown — jam, pickle, ghee, honey, baked goods.
+                Not exclusive with the two above: a home-made jam can be organic. */}
+            <label className="flex items-center gap-2"><input type="checkbox" name="is_homemade" checked={formData.is_homemade} onChange={handleChange} /> Home made</label>
             <label className="flex items-center gap-2"><input type="checkbox" name="delivery_available" checked={formData.delivery_available} onChange={handleChange} /> Delivery Available</label>
             <label className="flex items-center gap-2"><input type="checkbox" name="pickup_available" checked={formData.pickup_available} onChange={handleChange} /> Pickup Available</label>
             <label className="flex items-center gap-2 font-medium text-blue-600"><input type="checkbox" name="is_active" checked={formData.is_active} onChange={handleChange} /> Active (Visible in store)</label>

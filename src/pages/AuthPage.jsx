@@ -4,6 +4,7 @@ import { Eye, EyeOff, Leaf, ArrowRight, CheckCircle } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
 import { emailProblem, phoneProblem } from '../utils/validators'
+import { PASSWORD_RESET_ENABLED } from '../config/features'
 
 export default function AuthPage() {
   const [searchParams] = useSearchParams()
@@ -239,7 +240,10 @@ export default function AuthPage() {
             <div className="form-group">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
                 <label className="form-label" htmlFor="password">Password</label>
-                {mode === 'login' && (
+                {/* Hidden while reset is off — see PASSWORD_RESET_ENABLED.
+                    Offering it would send people to a form that promises an
+                    email nothing sends. */}
+                {mode === 'login' && PASSWORD_RESET_ENABLED && (
                   <Link
                     to={form.email ? `/forgot-password?email=${encodeURIComponent(form.email)}` : '/forgot-password'}
                     className="text-sm"
