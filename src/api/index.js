@@ -346,6 +346,16 @@ export const adminAPI = {
   assignDelivery: (kind, orderId, deliveryId) =>
     api.patch(`/admin/orders/${kind}/${orderId}/assign`, { delivery_id: deliveryId }),
 
+  // ── Weekly basket items ────────────────────────────────────────────────
+  // Items F2H sells inside a basket, created here rather than listed by a
+  // farm. They are ordinary products with basket_eligible + basket_only set,
+  // owned by the platform seller account — so they are hidden from the
+  // marketplace, refused for one-off orders, and exempt from stock checks.
+  basketItems: () => api.get('/admin/basket-items'),
+  createBasketItem: (data) => api.post('/admin/basket-items', data),
+  updateBasketItem: (id, data) => api.patch(`/admin/basket-items/${id}`, data),
+  retireBasketItem: (id) => api.delete(`/admin/basket-items/${id}`),
+
   // Collected is derived from completed orders; only handovers are stored.
   // Outstanding is the subtraction, so the two cannot drift apart.
   deliveryCash: () => api.get('/admin/delivery-cash'),

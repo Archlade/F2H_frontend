@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import BasketItems from '../../components/admin/BasketItems'
 import {
   AlertTriangle, Calendar, Check, MapPin, Package, PauseCircle, Phone,
   PlayCircle, Repeat, Tractor, User, X,
@@ -148,10 +149,14 @@ export default function AdminBaskets() {
         </span>
         <h1 className="text-h2">Weekly Baskets</h1>
         <p className="text-sm text-muted">
-          Customers build these from the whole catalogue and F2H sells them. Approving one
+          Customers build these from the items below and F2H sells them. Approving one
           commits us to sourcing it every week.
         </p>
       </div>
+
+      {/* The catalogue first, then the subscriptions it produced. You decide
+          what can be ordered before you look at what was. */}
+      <BasketItems />
 
       {stalePending > 0 && (
         <div
