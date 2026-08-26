@@ -82,7 +82,15 @@ const FarmerProductForm = () => {
       }
       navigate('/farmer/products');
     } catch (err) {
-      toast.error('Failed to save product');
+      // The server's message says which field it objected to, or names the
+      // missing column when a migration has not been run. "Failed to save
+      // product" said none of that and turned every cause into the same
+      // dead end.
+      toast.error(
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        `Could not save this product${err.response?.status ? ` (${err.response.status})` : ''}`
+      );
     } finally {
       setSaving(false);
     }
