@@ -30,6 +30,23 @@ const proxy = {
 
 export default defineConfig({
   plugins: [react()],
+  build: {
+    /**
+     * Source maps in the production build.
+     *
+     * Without them a crash reports `gf@index-C1OJYrJR.js:197:108279`, which
+     * names nothing and cannot be acted on — the one time you need a stack is
+     * the one time it is unreadable. With them the same frame reads as a file,
+     * a component and a line.
+     *
+     * `.map` files are emitted alongside the bundle and fetched only when a
+     * developer opens the debugger, so visitors never download them. They do
+     * expose the original source to anyone who looks; that is already true of
+     * any front-end bundle, which ships the same logic in minified form, and no
+     * secret belongs in it either way.
+     */
+    sourcemap: true,
+  },
   server: {
     port: 5173,
     proxy: {

@@ -17,7 +17,7 @@ import { Component } from 'react'
  * have no hook equivalent.
  */
 export default class ErrorBoundary extends Component {
-  state = { error: null, info: null }
+  state = { error: null, info: null, copied: false }
 
   static getDerivedStateFromError(error) {
     return { error }
@@ -30,8 +30,31 @@ export default class ErrorBoundary extends Component {
     console.error('Caught by ErrorBoundary:', error, info)
   }
 
-  render() {
+  /// The whole report as one string, message first.
+  text() {
     const { error, info } = this.state
+    const name = error?.name || 'Error'
+    const message = error?.message || String(error)
+    return [
+      `${name}: ${message}`,
+      error?.stack ? `\n${error.stack}` : '',
+      info?.componentStack ? `\ncomponents:${info.componentStack}` : '',
+    ].join('')
+  }
+
+  copy = async () => {
+    try {
+      await navigator.clipboard.writeText(this.text())
+      this.setState({ copied: true })
+    } catch {
+      // Clipboard is blocked outside a secure context and on some mobile
+      // browsers. Selecting the text by hand still works, so this stays quiet.
+      this.setState({ copied: false })
+    }
+  }
+
+  render() {
+    const { error, info, copied } = this.state
     if (!error) return this.props.children
 
     return (
@@ -43,6 +66,10 @@ export default class ErrorBoundary extends Component {
             keeps happening, send this text along with what you were doing.
           </p>
 
+          {/* Message first and on its own, because Safari's `error.stack`
+              contains only frames — unlike Chrome, it omits the message line.
+              Rendering `stack || message` therefore showed a wall of minified
+              frames and hid the one sentence that says what actually broke. */}
           <pre style={{
             background: 'var(--color-gray-50)',
             border: '1px solid var(--color-gray-200)',
@@ -54,8 +81,7 @@ export default class ErrorBoundary extends Component {
             whiteSpace: 'pre-wrap',
             wordBreak: 'break-word',
           }}>
-            {String(error?.stack || error?.message || error)}
-            {info?.componentStack ? `\n${info.componentStack}` : ''}
+            {this.text()}
           </pre>
 
           <div className="flex gap-2" style={{ marginTop: 16 }}>
@@ -66,10 +92,13 @@ export default class ErrorBoundary extends Component {
             >
               Reload the page
             </button>
+            <button type="button" className="btn btn-secondary touch-target" onClick={this.copy}>
+              {copied ? 'Copied' : 'Copy error'}
+            </button>
             <button
               type="button"
               className="btn btn-secondary touch-target"
-              onClick={() => this.setState({ error: null, info: null })}
+              onClick={() => this.setState({ error: null, info: null, copied: false })}
             >
               Try again
             </button>

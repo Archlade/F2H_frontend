@@ -76,7 +76,12 @@ export default function BasketItems() {
       description: item.description || '',
       // The API returns image objects; the form works in plain URLs, same as
       // the farmer product form.
-      images: (item.images || []).map((img) => (typeof img === 'string' ? img : img.image_url)),
+      // `typeof null === 'object'`, so a null entry would fall past the string
+      // check and dereference. Optional chaining and a filter mean one bad row
+      // costs its own thumbnail rather than the whole page.
+      images: (Array.isArray(item.images) ? item.images : [])
+        .map((img) => (typeof img === 'string' ? img : img?.image_url))
+        .filter(Boolean),
     })
   }
 
@@ -233,7 +238,7 @@ export default function BasketItems() {
                       value={form.category_id}
                       onChange={(e) => setForm({ ...form, category_id: e.target.value })}>
                 <option value="">Choose…</option>
-                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {categories.filter(Boolean).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
 
@@ -401,7 +406,7 @@ export default function BasketItems() {
           answer when it is on the same page. */}
       {retired.length > 0 && (
         <p className="text-xs text-muted" style={{ marginTop: 14 }}>
-          Retired: {retired.map((i) => i.name).join(', ')}
+          Retired: {retired.map((i) => i?.name).filter(Boolean).join(', ')}
         </p>
       )}
     </div>
