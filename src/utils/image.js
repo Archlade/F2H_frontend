@@ -117,7 +117,20 @@ export async function prepareImageForUpload(file) {
     return file
   }
 
-  const scale = needsResize ? MAX_DIMENSION / Math.max(width, height) : 1
+  // iOS Safari refuses to allocate a canvas past a fixed total area — 16.7M
+  // pixels on older devices — and a refused canvas is not an exception, it is a
+  // blank one that encodes to nothing. Modern phone cameras are already past
+  // that, so the long edge is capped again against the area rather than trusted
+  // to be sane.
+  const AREA_LIMIT = 16777216
+  const areaScale = width * height > AREA_LIMIT
+    ? Math.sqrt(AREA_LIMIT / (width * height))
+    : 1
+
+  const scale = Math.min(
+    needsResize ? MAX_DIMENSION / Math.max(width, height) : 1,
+    areaScale,
+  )
   const canvas = document.createElement('canvas')
   canvas.width = Math.round(width * scale)
   canvas.height = Math.round(height * scale)
@@ -142,6 +155,14 @@ export async function prepareImageForUpload(file) {
     })
   } catch {
     return file
+  } finally {
+    // iOS Safari does not reclaim canvas backing store when the element goes
+    // out of scope — it is held outside the JS heap and freed only when the
+    // canvas is resized to nothing. A 2560px canvas is ~26MB of RGBA, so a
+    // few phone photos in a row exhaust the tab and Safari kills it, which
+    // shows as the page going abruptly white with no error anywhere.
+    canvas.width = 0
+    canvas.height = 0
   }
 }
 
