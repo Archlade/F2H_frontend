@@ -3,7 +3,7 @@ import { productsAPI, categoriesAPI, uploadsAPI } from '../../api';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Loader, Upload, X } from 'lucide-react';
-import { MAX_UPLOAD_MB, isProbablyImage, prepareImagesForUpload, IMAGE_ACCEPT } from '../../utils/image';
+import { MAX_UPLOAD_MB, isProbablyImage, prepareImagesForUpload, IMAGE_ACCEPT, mediaUrl } from '../../utils/image';
 
 const FarmerProductForm = () => {
   const { id } = useParams();
