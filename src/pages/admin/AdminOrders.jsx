@@ -129,6 +129,8 @@ export default function AdminOrders() {
                 </div>
               )}
 
+              <OrderContents order={o} />
+
               <FarmerPickup order={o} onChanged={reload} />
 
               <AssignDelivery order={o} partners={partners} onChanged={reload} />
@@ -168,6 +170,93 @@ export default function AdminOrders() {
  * mean an order could be collected without payment or paid without collection,
  * and both of those are a farmer standing in a field arguing about money.
  */
+/**
+ * What is actually in this order.
+ *
+ * Collapsed by default and fetched only when opened. The list shows twenty
+ * orders at a time and most of the time an admin is scanning statuses, not
+ * reading contents — loading every basket's lines up front would be hundreds of
+ * rows nobody asked for.
+ *
+ * A purchase request is one product, which the row already names in its title.
+ * It is still offered here so both kinds behave the same way, and because the
+ * unit price and line total are not on the row.
+ */
+function OrderContents({ order }) {
+  const [open, setOpen] = useState(false)
+  const [items, setItems] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const toggle = async () => {
+    const next = !open
+    setOpen(next)
+    // Fetched once and kept. Re-opening a row should not re-query.
+    if (!next || items !== null) return
+
+    setLoading(true)
+    setError('')
+    try {
+      const { data } = await adminAPI.orderItems(order.order_type, order.id)
+      setItems(toList(data?.items))
+    } catch (err) {
+      setError(err.response?.data?.error || 'Could not load what is in this order')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div style={{ marginTop: 10 }}>
+      <button
+        type="button"
+        onClick={toggle}
+        className="btn btn-ghost btn-sm text-sm flex items-center gap-1"
+        style={{ padding: '4px 0', color: 'var(--color-primary-700)', fontWeight: 600 }}
+      >
+        <Package size={14} />
+        {open ? 'Hide items' : 'View items'}
+      </button>
+
+      {open && (
+        <div style={{ marginTop: 6 }}>
+          {loading && <div className="text-sm text-muted">Loading…</div>}
+          {error && <div className="text-sm" style={{ color: 'var(--color-error)' }}>{error}</div>}
+
+          {!loading && !error && items?.length === 0 && (
+            // Not the same as "nothing ordered": a basket whose subscription
+            // was deleted has no lines to show, and an admin chasing it needs
+            // to know that rather than assume an empty order.
+            <div className="text-sm text-muted">
+              No items recorded against this order.
+            </div>
+          )}
+
+          {!loading && items?.length > 0 && (
+            <table className="data-table" style={{ width: '100%' }}>
+              <tbody>
+                {items.map((it, i) => (
+                  <tr key={`${it.product_id}-${i}`}>
+                    <td style={{ padding: '6px 0' }}>
+                      <span className="font-semibold text-dark">{it.name}</span>
+                    </td>
+                    <td style={{ padding: '6px 0', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      {it.quantity}{it.unit ? ` ${it.unit}` : ''}
+                    </td>
+                    <td className="text-muted" style={{ padding: '6px 0 6px 14px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      {rupees(it.line_total)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function FarmerPickup({ order, onChanged }) {
   const [busy, setBusy] = useState(false)
   const fp = order.farmer_payment

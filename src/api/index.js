@@ -398,6 +398,11 @@ export const adminAPI = {
   // not returned by any customer-facing endpoint.
   orders: (params) => api.get('/admin/orders', { params }),
 
+  // What is in one order. Separate from the list on purpose: that endpoint
+  // reads 500 rows of each kind before paging, so carrying every order's lines
+  // would fetch hundreds of baskets to show twenty.
+  orderItems: (kind, orderId) => api.get(`/admin/orders/${kind}/${orderId}/items`),
+
   // Weekly baskets, with per-status counts alongside the page.
   familyPackSubscriptions: (params) => api.get('/admin/family-pack-subscriptions', { params }),
 

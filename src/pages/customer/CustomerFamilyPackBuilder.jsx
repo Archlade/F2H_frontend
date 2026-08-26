@@ -101,6 +101,19 @@ export default function CustomerFamilyPackBuilder() {
           setAddressId(data.delivery_address_id || '')
           setNotes(data.delivery_notes || '')
           setBasket(Object.fromEntries((data.items || []).map(i => [i.product_id, i.quantity])))
+        } else {
+          // One basket per customer — the server refuses a second with "You
+          // already have a weekly basket". It only says so on save, so without
+          // this you pick products, choose a day, set an address, press the
+          // button and *then* find out none of it could ever have worked.
+          // Caught on arrival instead, and sent to the basket that does exist.
+          const mine = toList((await familyPackSubscriptionsAPI.list()).data)
+            .find(s => ['pending', 'active', 'paused'].includes(s.status))
+          if (mine) {
+            toast('You already have a weekly basket — opening it to edit.')
+            navigate(basketPaths(user?.role).edit(mine.id), { replace: true })
+            return
+          }
         }
       } catch {
         toast.error('Failed to load the basket builder')
