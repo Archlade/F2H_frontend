@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import Testimonials from '../components/Testimonials'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Search, MapPin, ArrowRight, Leaf, Star, Truck, Users,
@@ -488,6 +489,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <Testimonials />
 
       {/* ═══ ABOUT ═══
           Static prose, and the reason it exists is search.

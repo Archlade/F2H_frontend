@@ -188,6 +188,21 @@ export const notificationsAPI = {
 }
 
 // ─── Categories ──────────────────────────────────────────────
+/**
+ * What customers think of F2H itself.
+ *
+ * `list` is public — it is the homepage testimonials, and the server returns
+ * approved reviews only. There is no parameter that asks for the pending ones.
+ */
+export const serviceReviewsAPI = {
+  list: (params) => api.get('/service-reviews', { params }),
+  mine: () => api.get('/service-reviews/mine'),
+  // Creates or replaces — one opinion of the service per person, and editing
+  // sends it back to the approval queue.
+  submit: (data) => api.post('/service-reviews', data),
+  withdraw: () => api.delete('/service-reviews/mine'),
+}
+
 export const categoriesAPI = {
   list: () => api.get('/categories'),
 }
@@ -345,6 +360,14 @@ export const adminAPI = {
   // unassigns, which is how an order moves between partners.
   assignDelivery: (kind, orderId, deliveryId) =>
     api.patch(`/admin/orders/${kind}/${orderId}/assign`, { delivery_id: deliveryId }),
+
+  // ── Service reviews ────────────────────────────────────────────────────
+  // Feedback about F2H itself, as opposed to `reviews` below, which moderates
+  // what customers said about a *product*. This one decides what appears on
+  // the homepage.
+  serviceReviews: (params) => api.get('/admin/service-reviews', { params }),
+  approveServiceReview: (id) => api.patch(`/admin/service-reviews/${id}/approve`),
+  deleteServiceReview: (id) => api.delete(`/admin/service-reviews/${id}`),
 
   // ── Weekly basket items ────────────────────────────────────────────────
   // Items F2H sells inside a basket, created here rather than listed by a

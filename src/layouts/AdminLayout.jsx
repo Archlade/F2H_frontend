@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import UserAvatar from '../components/UserAvatar'
-import { BarChart2, Bike, Boxes, ChevronLeft, ChevronRight, ClipboardList, FileText, Flag, Globe, Image, LayoutDashboard, LogOut, Megaphone, Menu, Repeat, Shield, ShoppingBag, SlidersHorizontal, Sparkles, Star, Table2, Tag, Ticket, Tractor, Users, X } from 'lucide-react'
+import { BarChart2, Bike, Boxes, ChevronLeft, ChevronRight, ClipboardList, FileText, Flag, Globe, Image, LayoutDashboard, LogOut, Megaphone, Menu, MessageSquare, Repeat, Shield, ShoppingBag, SlidersHorizontal, Sparkles, Star, Table2, Tag, Ticket, Tractor, Users, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import MobileBottomNav from '../components/MobileBottomNav'
 import toast from 'react-hot-toast'
@@ -31,6 +31,9 @@ const adminNav = [
   { to: '/admin/announcements', label: 'Announcements', icon: Megaphone },
   { section: 'Moderation' },
   { to: '/admin/reviews', label: 'Reviews', icon: Star },
+  // Named for what it is. The entry above moderates reviews of a
+  // *product*; this decides what appears on the homepage.
+  { to: '/admin/service-reviews', label: 'Service feedback', icon: MessageSquare },
   { to: '/admin/reports', label: 'Reports', icon: Flag },
   { section: 'System' },
   // Named 'Reports & data' rather than 'Reports': the Moderation section

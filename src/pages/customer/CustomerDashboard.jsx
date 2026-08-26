@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import ServiceReviewForm from '../../components/ServiceReviewForm';
 import { mediaUrl } from '../../utils/image'
 import { customersAPI } from '../../api';
 import { useAuth } from '../../context/AuthContext';
@@ -104,6 +105,13 @@ const CustomerDashboard = () => {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Last on the page on purpose. Somebody arrives here to check an order,
+          not to review us; asking before they have found what they came for is
+          how a feedback box gets ignored. */}
+      <div style={{ marginTop: 24, maxWidth: 640 }}>
+        <ServiceReviewForm />
       </div>
     </div>
   );
