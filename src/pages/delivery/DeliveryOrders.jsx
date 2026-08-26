@@ -221,7 +221,8 @@ export default function DeliveryOrders() {
                     // Shown rather than hidden so the driver knows it is coming
                     // and does not go looking for it.
                     <div className="text-sm text-muted" style={{ textAlign: 'center' }}>
-                      Waiting on the store room · {o.status?.replace(/_/g, ' ')}
+                      Not released yet — an admin marks it collected once the store
+                      room has it. Currently {o.status?.replace(/_/g, ' ')}.
                     </div>
                   )}
                 </div>
