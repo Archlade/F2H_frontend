@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { adminAPI } from '../../api';
 import {
   Users, Tractor, Package, ShoppingCart, CheckCircle, AlertTriangle,
-  DollarSign, Loader, BadgeCheck, Star, Boxes, ArrowRight, RefreshCw,
+  IndianRupee, Loader, BadgeCheck, Star, Boxes, ArrowRight, RefreshCw,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -38,7 +38,7 @@ export default function AdminDashboard() {
   if (!data) return <div className="empty-state">No data available</div>;
 
   const statCards = [
-    { label: 'Total Revenue', value: money(data.total_revenue), icon: DollarSign, color: '#ffedd5', iconColor: '#ea580c' },
+    { label: 'Total Revenue', value: money(data.total_revenue), icon: IndianRupee, color: '#ffedd5', iconColor: '#ea580c' },
     { label: 'Total Users', value: data.total_users || 0, icon: Users, color: '#dbeafe', iconColor: '#2563eb' },
     { label: 'Total Farmers', value: data.total_farmers || 0, icon: Tractor, color: '#dcfce7', iconColor: '#16a34a' },
     { label: 'Total Products', value: data.total_products || 0, icon: Package, color: '#fef3c7', iconColor: '#d97706' },

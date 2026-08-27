@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { farmersAPI } from '../../api';
 import { useAuth } from '../../context/AuthContext';
-import { Package, ShoppingCart, DollarSign, AlertTriangle, Loader, Plus, ArrowRight } from 'lucide-react';
+import { Package, ShoppingCart, IndianRupee, AlertTriangle, Loader, Plus, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 import ServiceReviewForm from '../../components/ServiceReviewForm';
@@ -27,7 +27,7 @@ const FarmerDashboard = () => {
   const statCards = [
     { label: 'Total Products', value: stats?.total_products || 0, icon: Package, color: '#dbeafe', iconColor: '#2563eb' },
     { label: 'Pending Requests', value: stats?.pending_requests || 0, icon: ShoppingCart, color: '#fef3c7', iconColor: '#d97706' },
-    { label: 'Total Revenue', value: `₹${Number(stats?.total_revenue || 0).toLocaleString()}`, icon: DollarSign, color: 'var(--color-primary-100)', iconColor: 'var(--color-primary-700)' },
+    { label: 'Total Revenue', value: `₹${Number(stats?.total_revenue || 0).toLocaleString()}`, icon: IndianRupee, color: 'var(--color-primary-100)', iconColor: 'var(--color-primary-700)' },
     { label: 'Low Stock', value: stats?.low_stock_products || 0, icon: AlertTriangle, color: '#fee2e2', iconColor: '#dc2626' },
   ];
 

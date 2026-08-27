@@ -128,7 +128,7 @@ const FarmerProductForm = () => {
           <h2 className="text-lg font-semibold border-b pb-2">Pricing & Inventory</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Price ($) *</label>
+              <label className="block text-sm font-medium mb-1">Price (₹) *</label>
               <input type="number" step="0.01" name="price" value={formData.price} onChange={handleChange} required className="w-full border p-2 rounded" />
             </div>
             <div>
