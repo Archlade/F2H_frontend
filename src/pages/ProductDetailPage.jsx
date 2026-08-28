@@ -158,6 +158,34 @@ export default function ProductDetailPage() {
     toast.success(data.favorited ? 'Added to favorites' : 'Removed from favorites')
   }
 
+  // Add to cart, from either the desktop button or the sticky mobile bar.
+  //
+  // One function rather than two copies of the same handler: the sticky bar had
+  // no cart button at all, so on a phone the cart was unreachable from a product
+  // page — the only way in was the Request form, which is a different purchase
+  // with different rules.
+  //
+  // Sends the quantity chosen in the Request form when there is one, otherwise
+  // the farmer's minimum. The amount is adjustable in the cart, which the toast
+  // says, because silently adding an amount nobody picked is the confusing part.
+  const handleAddToCart = async () => {
+    if (!isAuthenticated) { navigate('/auth?mode=login'); return }
+    // Only your own listing is refused — the same rule the server applies.
+    // Farmers buy from each other and admins may buy too.
+    if (product?.farmer_id === user.id) { toast.error('This is your own listing'); return }
+
+    setAddingToCart(true)
+    try {
+      const qty = Number(requestForm.quantity) || Number(product.min_quantity) || 1
+      await addItem(product.id, qty)
+      toast.success(`Added ${qty} ${product.unit} — change the amount in your cart`)
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Could not add to cart')
+    } finally {
+      setAddingToCart(false)
+    }
+  }
+
   const handleRequest = async (e) => {
     e.preventDefault()
     if (!isAuthenticated) { navigate('/auth?mode=login'); return }
@@ -404,30 +432,13 @@ export default function ProductDetailPage() {
 
             {/* Buying several things is the common case, and one order per
                 product means a separate form each time. The cart is the way
-                round that; "Request to Buy" stays for the single-item case. */}
+                round that; "Request to Buy" stays for the single-item case,
+                where a coupon still applies. */}
             <button
               className="btn btn-secondary btn-lg"
               style={{ marginTop: 10, width: '100%' }}
               disabled={product.stock_status === 'out_of_stock' || addingToCart}
-              onClick={async () => {
-                if (!isAuthenticated) { navigate('/auth?mode=login'); return }
-                setAddingToCart(true)
-                try {
-                  // The quantity the customer actually chose.
-                  //
-                  // This sent `product.min_quantity` regardless — so the
-                  // stepper directly above this button did nothing for the cart
-                  // path. Set 5kg, add to cart, get 0.5kg, and nothing on
-                  // screen said why.
-                  const qty = Number(requestForm.quantity) || Number(product.min_quantity) || 1
-                  await addItem(product.id, qty)
-                  toast.success(`Added ${qty} ${product.unit} to cart`)
-                } catch (err) {
-                  toast.error(err.response?.data?.error || 'Could not add to cart')
-                } finally {
-                  setAddingToCart(false)
-                }
-              }}
+              onClick={handleAddToCart}
             >
               <ShoppingCart size={16} /> {addingToCart ? 'Adding…' : 'Add to cart'}
             </button>
@@ -444,13 +455,26 @@ export default function ProductDetailPage() {
             <span style={{ fontSize: '0.75rem', color: 'var(--color-gray-500)', fontWeight: 500 }}>/{product.unit}</span>
           </div>
         </div>
-        <div className="flex gap-2" style={{ flex: 1, maxWidth: 220 }}>
+        {/* 260, not 220: this row holds three controls now rather than two, and
+            two 44px icon buttons out of 220 left "Request" too narrow to read. */}
+        <div className="flex gap-2" style={{ flex: 1, maxWidth: 260 }}>
           <button
             className="btn btn-secondary btn-icon touch-target"
             onClick={handleFavorite}
             aria-label="Favorite"
           >
             <Heart size={18} fill={favorited ? 'var(--color-error)' : 'none'} color={favorited ? 'var(--color-error)' : 'currentColor'} />
+          </button>
+          {/* Both ways to buy, at thumb height. This bar used to offer only
+              "Request", which left the cart unreachable from a product page on
+              a phone — the same two buttons the app shows in its buy bar. */}
+          <button
+            className="btn btn-secondary btn-icon touch-target"
+            onClick={handleAddToCart}
+            disabled={product.stock_status === 'out_of_stock' || addingToCart}
+            aria-label="Add to cart"
+          >
+            <ShoppingCart size={18} />
           </button>
           <button
             className="btn btn-primary w-full touch-target"
