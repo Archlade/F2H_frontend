@@ -302,12 +302,26 @@ function FarmerPickup({ order, onChanged }) {
     )
   }
 
-  const canPickUp = order.status === 'preparing'
+  // `ready_for_pickup`, not `preparing`.
+  //
+  // The farmer now marks every order ready before F2H takes it, and
+  // `preparing → picked_up` is no longer a legal move. Gated on `preparing`
+  // this button appeared one step too early and sent a transition the server
+  // refuses — and then vanished at `ready_for_pickup`, the one state it is for.
+  // The order sat there with the courier told "not released yet" and no way for
+  // anybody to release it.
+  //
+  // Never on a farm-pickup order: nobody from F2H collects one, so there is no
+  // moment at which we hand the farmer cash. The customer pays them directly.
+  const isFarmPickup = order.purchase_mode === 'pickup'
+  const canPickUp = order.status === 'ready_for_pickup' && !isFarmPickup
 
   if (!canPickUp) {
     return (
       <div className="text-xs" style={{ marginTop: 8, color: 'var(--color-gray-600)', fontWeight: 600 }}>
-        Farmer to be paid {rupees(fp.due)} at pickup
+        {isFarmPickup
+          ? `Customer pays the farmer ${rupees(fp.due)} on collection`
+          : `Farmer to be paid ${rupees(fp.due)} at pickup`}
       </div>
     )
   }
@@ -405,7 +419,14 @@ function AssignDelivery({ order, partners, onChanged }) {
   // Nothing to deliver: the customer is collecting it themselves.
   if (order.purchase_mode === 'pickup') return null
   // Nothing to carry yet, or nothing left to carry.
-  if (['pending', 'admin_review', 'rejected',
+  //
+  // Starts at `picked_up`, when F2H physically has the goods. It used to start
+  // at `confirmed`, so an order could be handed to a courier while it was still
+  // at the farm — their app then read "not released yet" with nothing anywhere
+  // to release it, which looks like a broken assignment rather than a sequence.
+  // The Collected button sits just above this; press it and the picker appears.
+  if (['pending', 'admin_review', 'accepted', 'chat_active', 'rejected',
+       'confirmed', 'preparing', 'ready_for_pickup',
        'completed', 'cancelled'].includes(order.status)) return null
 
   const assign = async (value) => {
