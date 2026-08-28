@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { BikeIcon, IndianRupee, Loader, Plus, Users, Wallet } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-import { adminAPI } from '../../api'
+import { adminAPI, toList } from '../../api'
 import { usePrivatePageSeo } from '../../utils/seo'
 
 /**
@@ -33,6 +33,11 @@ export default function AdminDelivery() {
   const [remitFor, setRemitFor] = useState(null)
   const [remitAmount, setRemitAmount] = useState('')
   const [remitNote, setRemitNote] = useState('')
+  // The orders this handover settles. Ticking them sets the amount, so the cash
+  // recorded and the orders closed are the same set rather than two figures an
+  // admin has to reconcile by eye.
+  const [awaiting, setAwaiting] = useState([])
+  const [picked, setPicked] = useState(() => new Set())
   const [saving, setSaving] = useState(false)
 
   const [form, setForm] = useState({
@@ -72,6 +77,36 @@ export default function AdminDelivery() {
     }
   }
 
+  const openRemit = async (p) => {
+    setRemitFor(p)
+    setRemitAmount(String(p.outstanding > 0 ? p.outstanding : ''))
+    setAwaiting([]); setPicked(new Set())
+    try {
+      const { data } = await adminAPI.ordersAwaitingHandover(p.delivery_id)
+      const rows = toList(data)
+      setAwaiting(rows)
+      // Everything preselected: a courier hands over the round, not one stop.
+      setPicked(new Set(rows.map((r) => `${r.kind}-${r.id}`)))
+      if (rows.length) setRemitAmount(String(data.total ?? p.outstanding))
+    } catch {
+      // The form still works as a plain amount — it just will not close any
+      // orders, which is exactly what a correcting entry needs anyway.
+    }
+  }
+
+  const toggle = (key, amount) => {
+    setPicked((prev) => {
+      const next = new Set(prev)
+      next.has(key) ? next.delete(key) : next.add(key)
+      // Keep the amount as the sum of what is ticked.
+      const sum = awaiting
+        .filter((r) => next.has(`${r.kind}-${r.id}`))
+        .reduce((t, r) => t + Number(r.amount || 0), 0)
+      setRemitAmount(sum ? String(Number(sum.toFixed(2))) : '')
+      return next
+    })
+  }
+
   const remit = async (e) => {
     e.preventDefault()
     const amount = Number(remitAmount)
@@ -80,9 +115,16 @@ export default function AdminDelivery() {
     }
     setSaving(true)
     try {
-      await adminAPI.recordRemittance(remitFor.delivery_id, { amount, note: remitNote })
-      toast.success(`Recorded ${money(amount)} from ${remitFor.full_name}`)
+      const orders = awaiting
+        .filter((r) => picked.has(`${r.kind}-${r.id}`))
+        .map((r) => ({ kind: r.kind, id: r.id }))
+      await adminAPI.recordRemittance(remitFor.delivery_id,
+        { amount, note: remitNote, orders })
+      toast.success(orders.length
+        ? `Recorded ${money(amount)} — ${orders.length} order${orders.length === 1 ? '' : 's'} completed`
+        : `Recorded ${money(amount)} from ${remitFor.full_name}`)
       setRemitFor(null); setRemitAmount(''); setRemitNote('')
+      setAwaiting([]); setPicked(new Set())
       load()
     } catch (err) {
       toast.error(err.response?.data?.error || 'Could not record that')
@@ -236,7 +278,7 @@ export default function AdminDelivery() {
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       <button type="button" className="btn btn-secondary btn-sm"
-                              onClick={() => { setRemitFor(p); setRemitAmount(String(p.outstanding > 0 ? p.outstanding : '')) }}>
+                              onClick={() => openRemit(p)}>
                         <IndianRupee size={13} /> Record handover
                       </button>
                     </td>
@@ -262,6 +304,48 @@ export default function AdminDelivery() {
             <strong>To correct a mistake, record a negative amount</strong> rather
             than trying to edit the original; the trail keeps both.
           </p>
+
+          {/* The orders this handover settles. Each one closes when the cash is
+              recorded, so the ledger and the orders move together instead of
+              being two things somebody has to remember to do. */}
+          {awaiting.length > 0 && (
+            <div className="form-group">
+              <label className="form-label">
+                Orders this covers ({picked.size} of {awaiting.length})
+              </label>
+              <div style={{
+                border: '1px solid var(--color-gray-200)',
+                borderRadius: 'var(--radius-lg)',
+                maxHeight: 220, overflowY: 'auto',
+              }}>
+                {awaiting.map((r) => {
+                  const key = `${r.kind}-${r.id}`
+                  return (
+                    <label key={key} className="flex items-center gap-2"
+                           style={{
+                             padding: '8px 12px', cursor: 'pointer',
+                             borderBottom: '1px solid var(--color-gray-50)',
+                           }}>
+                      <input type="checkbox" checked={picked.has(key)}
+                             onChange={() => toggle(key, r.amount)} />
+                      <span className="text-sm" style={{ flex: 1 }}>
+                        <span className="font-semibold text-dark">{r.title}</span>
+                        <span className="text-muted">
+                          {' · '}{r.kind === 'request' ? 'Order' : 'Basket'} #{r.id}
+                          {r.customer ? ` · ${r.customer}` : ''}
+                        </span>
+                      </span>
+                      <span className="text-sm font-semibold">{money(r.amount)}</span>
+                    </label>
+                  )
+                })}
+              </div>
+              <small className="text-muted" style={{ display: 'block', marginTop: 6 }}>
+                Ticking sets the amount. Anything left unticked stays open and
+                keeps showing as outstanding.
+              </small>
+            </div>
+          )}
 
           <div className="form-group">
             <label className="form-label" htmlFor="remit-amount">Amount</label>

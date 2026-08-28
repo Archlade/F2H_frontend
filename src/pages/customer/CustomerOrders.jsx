@@ -18,7 +18,7 @@ const CustomerOrders = () => {
 
   // The delivery path. `ready_for_pickup` is the customer-collects variant and
   // is not a stage on this line — an order takes one branch or the other.
-  const orderStatuses = ['confirmed', 'preparing', 'picked_up', 'out_for_delivery', 'completed'];
+  const orderStatuses = ['confirmed', 'preparing', 'picked_up', 'out_for_delivery', 'cash_collected', 'completed'];
 
   return (
     <div className="p-6">

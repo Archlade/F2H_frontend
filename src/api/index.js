@@ -389,6 +389,11 @@ export const adminAPI = {
   // Outstanding is the subtraction, so the two cannot drift apart.
   deliveryCash: () => api.get('/admin/delivery-cash'),
   remittances: (id) => api.get(`/admin/delivery-cash/${id}/remittances`),
+  // What a courier owes, order by order. The handover form is built from this
+  // so the cash recorded and the orders closed are the same set.
+  ordersAwaitingHandover: (deliveryId) =>
+    api.get(`/admin/delivery-cash/${deliveryId}/awaiting`),
+
   recordRemittance: (id, data) =>
     api.post(`/admin/delivery-cash/${id}/remittances`, data),
   reviews: (params) => api.get('/admin/reviews', { params }),

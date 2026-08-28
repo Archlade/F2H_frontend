@@ -32,3 +32,24 @@ export function homeFor(role) {
 
 /** Roles that should never see the public marketplace or the customer area. */
 export const STAFF_ONLY_ROLES = ['delivery']
+
+/**
+ * Where to land somebody after they place an order.
+ *
+ * Not `/dashboard/requests` for everyone. That route is customer-only, so a
+ * farmer or an admin who checked out placed the order successfully and was then
+ * bounced by the role guard to their own home — no confirmation, no order in
+ * sight, and every reason to think it had failed and try again.
+ */
+export function ordersLandingFor(role) {
+  switch (role) {
+    case 'admin':
+      return '/admin/orders'
+    // Farmers buy from each other; their purchases are kept apart from the
+    // orders they receive as a seller.
+    case 'farmer':
+      return '/farmer/purchases'
+    default:
+      return '/dashboard/requests'
+  }
+}

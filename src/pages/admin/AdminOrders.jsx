@@ -28,6 +28,7 @@ const FILTERS = [
   // round actually wants.
   ['picked_up', 'Picked up'],
   ['out_for_delivery', 'Out for delivery'],
+  ['cash_collected', 'Cash collected'],
   ['completed', 'Completed'],
   ['cancelled', 'Cancelled'],
 ]
@@ -126,6 +127,21 @@ export default function AdminOrders() {
               {o.payment_status === 'pending' && (
                 <div className="text-xs" style={{ marginTop: 8, color: 'var(--color-accent-800, #92400E)', fontWeight: 600 }}>
                   Cash on delivery — {rupees(o.total_price)} due from the customer
+                </div>
+              )}
+
+              {/* The delivery fee, on its own line.
+                  It is charged to the customer and kept by F2H — the farmer's
+                  share is calculated on the goods alone. Folded into one total
+                  it read as though the farmer were being paid a cut of it. */}
+              {Number(o.delivery_charge) > 0 && (
+                <div className="text-xs text-muted" style={{ marginTop: 6 }}>
+                  {rupees(o.goods_total)} produce
+                  {' + '}
+                  <span style={{ fontWeight: 600, color: 'var(--color-gray-700)' }}>
+                    {rupees(o.delivery_charge)} delivery
+                  </span>
+                  {' = '}{rupees(o.total_price)}
                 </div>
               )}
 
@@ -389,7 +405,7 @@ function AssignDelivery({ order, partners, onChanged }) {
   // Nothing to deliver: the customer is collecting it themselves.
   if (order.purchase_mode === 'pickup') return null
   // Nothing to carry yet, or nothing left to carry.
-  if (['pending', 'admin_review', 'accepted', 'rejected', 'chat_active',
+  if (['pending', 'admin_review', 'rejected',
        'completed', 'cancelled'].includes(order.status)) return null
 
   const assign = async (value) => {

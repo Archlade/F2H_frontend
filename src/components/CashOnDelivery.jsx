@@ -26,7 +26,7 @@ import { paymentsAPI } from '../api'
 
 // Before these the produce has not reached the customer, so there is nobody to
 // take money from. Mirrors COLLECTABLE_STATUSES in backend/app/routes/payments.py.
-const COLLECTABLE = ['ready_for_pickup', 'out_for_delivery', 'completed']
+const COLLECTABLE = ['ready_for_pickup', 'out_for_delivery', 'cash_collected', 'completed']
 
 export default function CashOnDelivery({ order, orderType, canCollect = false, onCollected }) {
   const [busy, setBusy] = useState(false)

@@ -88,7 +88,7 @@ const FarmerRequests = () => {
                   <td className="p-4" data-label="Actions">
                     {req.status === 'pending' && (
                       <div className="flex gap-2">
-                        <button onClick={() => updateStatus(req.id, 'accepted')} className="p-1.5 bg-green-100 text-green-700 rounded hover:bg-green-200 touch-target" title="Accept"><Check size={18}/></button>
+                        <button onClick={() => updateStatus(req.id, 'confirmed')} className="p-1.5 bg-green-100 text-green-700 rounded hover:bg-green-200 touch-target" title="Accept"><Check size={18}/></button>
                         <button onClick={() => updateStatus(req.id, 'rejected')} className="p-1.5 bg-red-100 text-red-700 rounded hover:bg-red-200 touch-target" title="Reject"><X size={18}/></button>
                       </div>
                     )}

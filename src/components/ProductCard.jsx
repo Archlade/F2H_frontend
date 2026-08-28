@@ -29,7 +29,14 @@ export default function ProductCard({ product, showDistance = true, compact = fa
   // Hidden rather than disabled for people who cannot buy at all: an admin, or
   // the farmer looking at their own listing. A permanently dead button on every
   // card is worse than no button.
-  const canBuy = user?.role !== 'admin' && product.farmer?.id !== user?.id
+  // Admins may buy like anyone else. The server never refused them — the cart
+  // and the request endpoints have no role check at all — so this was a client
+  // rule with nothing behind it, and it hid the button silently while the
+  // product page showed it and then refused on tap.
+  //
+  // Still not your own listing: selling to yourself inflates your own sales
+  // figures, and the server rejects it too.
+  const canBuy = product.farmer?.id !== user?.id
 
   const handleQuickAdd = async (e) => {
     // The whole card is a <Link>. Without both of these, adding to the cart

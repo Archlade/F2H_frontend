@@ -33,7 +33,8 @@ function nextStep(status) {
              hint: 'Loaded and leaving the store room' }
   }
   if (status === 'out_for_delivery') {
-    return { label: 'Delivered & cash collected', to: 'completed',
+    // Not 'completed': the order closes when an admin records the handover.
+    return { label: 'Delivered & cash collected', to: 'cash_collected',
              hint: 'Only after the customer has paid' }
   }
   return null
@@ -84,7 +85,9 @@ export default function DeliveryOrders() {
     try {
       const api = order.kind === 'request' ? requestsAPI : familyPackOrdersAPI
       await api.updateStatus(order.id, { status: to })
-      toast.success(to === 'completed' ? 'Delivered — cash recorded' : 'On your way')
+      toast.success(to === 'cash_collected'
+        ? 'Delivered — an admin will record the handover'
+        : 'On your way')
       load()
     } catch (err) {
       toast.error(err.response?.data?.error || 'Could not update that order')

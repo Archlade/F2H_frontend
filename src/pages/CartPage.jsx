@@ -7,6 +7,7 @@ import { locationsAPI, toList } from '../api'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { basketPaths } from '../utils/basketPaths'
+import { ordersLandingFor } from '../utils/roleHome'
 import { useSeo } from '../utils/seo'
 
 /**
@@ -93,7 +94,9 @@ export default function CartPage() {
         delivery_notes: notes,
       })
       toast.success(result.message || 'Order placed')
-      navigate('/dashboard/requests')
+      // Per role: '/dashboard/requests' is customer-only, so a farmer or an
+      // admin placing an order landed on a route their own guard refused.
+      navigate(ordersLandingFor(user?.role))
     } catch (err) {
       toast.error(err.response?.data?.error || 'Could not place your order')
       setPlacing(false)

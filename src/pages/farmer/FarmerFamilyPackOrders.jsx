@@ -100,7 +100,7 @@ export default function FarmerFamilyPackOrders() {
               <div className="flex justify-end gap-2 flex-wrap" style={{ paddingTop: 14, borderTop: '1px solid var(--color-gray-100)' }}>
                 {o.status === 'pending' && (
                   <>
-                    <button className="btn btn-success btn-sm font-bold" onClick={() => handleStatusChange(o.id, 'accepted')} style={{ borderRadius: 'var(--radius-full)' }}>
+                    <button className="btn btn-success btn-sm font-bold" onClick={() => handleStatusChange(o.id, 'confirmed')} style={{ borderRadius: 'var(--radius-full)' }}>
                       <Check size={14} /> Accept Order
                     </button>
                     <button className="btn btn-error btn-sm" onClick={() => handleStatusChange(o.id, 'rejected')} style={{ borderRadius: 'var(--radius-full)' }}>

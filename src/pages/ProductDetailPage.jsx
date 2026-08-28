@@ -161,9 +161,9 @@ export default function ProductDetailPage() {
   const handleRequest = async (e) => {
     e.preventDefault()
     if (!isAuthenticated) { navigate('/auth?mode=login'); return }
-    // Farmers buy from each other, so only two cases are refused: an admin,
-    // and a farmer looking at a listing of their own.
-    if (user.role === 'admin') { toast.error('Admin accounts cannot place orders'); return }
+    // Farmers buy from each other and admins may buy too, so the only case
+    // refused here is your own listing — which the server refuses as well,
+    // because selling to yourself inflates your own sales figures.
     if (product?.farmer_id === user.id) { toast.error('This is your own listing'); return }
 
     if (requestForm.purchase_mode === 'delivery' && !requestForm.delivery_address_id) {
@@ -411,12 +411,6 @@ export default function ProductDetailPage() {
               disabled={product.stock_status === 'out_of_stock' || addingToCart}
               onClick={async () => {
                 if (!isAuthenticated) { navigate('/auth?mode=login'); return }
-                // Same guard as Request to Buy. Without it an admin could fill
-                // a cart and only discover at checkout that they cannot order.
-                if (user?.role === 'admin') {
-                  toast.error('Admin accounts cannot place orders')
-                  return
-                }
                 setAddingToCart(true)
                 try {
                   // The quantity the customer actually chose.

@@ -12,7 +12,7 @@ import { basketPaths } from '../../utils/basketPaths'
 import OrderPrice from '../../components/OrderPrice'
 import CashOnDelivery from '../../components/CashOnDelivery'
 
-const STAGES = ['confirmed', 'preparing', 'picked_up', 'out_for_delivery', 'completed']
+const STAGES = ['confirmed', 'preparing', 'picked_up', 'out_for_delivery', 'cash_collected', 'completed']
 const STAGE_LABELS = {
   confirmed: 'Scheduled',
   preparing: 'Being packed',
@@ -20,6 +20,7 @@ const STAGE_LABELS = {
   // farmer is paid — only that their basket has left the farm.
   picked_up: 'Collected from the farm',
   out_for_delivery: 'Out for delivery',
+  cash_collected: 'Delivered',
   completed: 'Delivered',
 }
 

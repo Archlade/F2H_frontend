@@ -24,7 +24,7 @@ import CashOnDelivery from '../../components/CashOnDelivery';
  * The server enforces this too. This only decides whether the button is worth
  * drawing: offering one that always fails is the worst of both.
  */
-const BUYER_CANCELLABLE_FROM = ['pending', 'admin_review', 'accepted', 'chat_active'];
+const BUYER_CANCELLABLE_FROM = ['pending', 'admin_review'];
 
 const CustomerRequests = ({ side, title = 'Purchase Requests' }) => {
   const [requests, setRequests] = useState([]);
@@ -74,7 +74,7 @@ const CustomerRequests = ({ side, title = 'Purchase Requests' }) => {
     }
   };
 
-  const tabs = ['all', 'pending', 'accepted', 'completed', 'cancelled'];
+  const tabs = ['all', 'pending', 'confirmed', 'completed', 'cancelled'];
 
   return (
     <div className="p-6">

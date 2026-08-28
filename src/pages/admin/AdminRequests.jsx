@@ -27,14 +27,13 @@ const STATUSES = [
   ['', 'All statuses'],
   ['pending', 'Pending'],
   ['admin_review', 'Admin review'],
-  ['accepted', 'Accepted'],
   ['rejected', 'Rejected'],
-  ['chat_active', 'In discussion'],
   ['confirmed', 'Confirmed'],
   ['preparing', 'Preparing'],
   ['picked_up', 'Picked up'],
   ['ready_for_pickup', 'Ready for pickup'],
   ['out_for_delivery', 'Out for delivery'],
+  ['cash_collected', 'Cash collected'],
   ['completed', 'Completed'],
   ['cancelled', 'Cancelled'],
 ]
@@ -42,8 +41,8 @@ const STATUSES = [
 // `.status-*` classes that actually exist in index.css. The rest fall back to
 // a neutral badge rather than an unstyled one — the same class of bug as the
 // object-child above, just quieter.
-const STYLED = new Set(['pending', 'accepted', 'rejected', 'preparing',
-  'picked_up', 'out_for_delivery', 'completed', 'cancelled'])
+const STYLED = new Set(['pending', 'confirmed', 'rejected', 'preparing',
+  'picked_up', 'out_for_delivery', 'cash_collected', 'completed', 'cancelled'])
 
 const badgeFor = (status) =>
   STYLED.has(status) ? `badge status-${status}` : 'badge badge-gray'
