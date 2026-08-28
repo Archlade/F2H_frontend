@@ -5,6 +5,47 @@ import toast from 'react-hot-toast';
 import OrderPrice from '../../components/OrderPrice';
 import CashOnDelivery from '../../components/CashOnDelivery';
 
+// What the farmer may set next, given where the order is and who collects it.
+//
+// Mirrors `VALID_TRANSITIONS` ∩ `PARTY_TRANSITIONS['seller']` on the server.
+// The dropdown used to list every option unconditionally, so a farmer could
+// pick "Accepted" on a delivered order or "Completed" on one still preparing —
+// both refused by the server, leaving a control that snaps back with an error.
+//
+// The farmer's run is the same on both lanes: confirm → preparing → ready. What
+// differs is the end. On a pickup order the customer collects at the farm and
+// pays them directly, so the farmer closes it. On a delivery order F2H takes it
+// from here, and completion waits for the courier's cash to reach the office.
+const farmerNextStatuses = (status, purchaseMode) => {
+  const isPickup = purchaseMode === 'pickup';
+  switch (status) {
+    case 'pending':
+    case 'admin_review':
+    case 'accepted':
+    case 'chat_active':
+      return [['confirmed', 'Confirm order'], ['rejected', 'Reject']];
+    case 'confirmed':
+      return [['preparing', 'Preparing']];
+    case 'preparing':
+      return [['ready_for_pickup', isPickup ? 'Ready for customer pickup' : 'Ready for collection']];
+    case 'ready_for_pickup':
+      return isPickup ? [['completed', 'Collected & paid — complete']] : [];
+    default:
+      return [];
+  }
+};
+
+// Shown disabled so the farmer can see where the order has got to, rather than
+// an empty dropdown that looks broken. None of these are theirs to set.
+const FOLLOW_ON_LABELS = {
+  picked_up: 'Collected by F2H',
+  out_for_delivery: 'Out for delivery',
+  cash_collected: 'Delivered — cash with courier',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+  rejected: 'Rejected',
+};
+
 const FarmerOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -77,27 +118,33 @@ const FarmerOrders = () => {
 
               <div className="mt-auto pt-4 border-t flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-600">Update Status:</span>
-                <select 
-                  value={order.status}
-                  onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                  className="border rounded p-1 text-sm bg-gray-50"
-                >
-                  <option value="accepted">Accepted</option>
-                  <option value="preparing">Preparing</option>
-                  <option value="ready_for_pickup">Ready for customer pickup</option>
-                  <option value="completed">Completed</option>
-                  {/* Collected by F2H and Out for delivery are not here on
-                      purpose. Collection is when F2H hands over the cash, so
-                      it is recorded by whoever pays — the server rejects a
-                      farmer setting either, and an option that always errors
-                      is worse than no option. */}
-                  {order.status === 'picked_up' && (
-                    <option value="picked_up" disabled>Collected by F2H</option>
-                  )}
-                  {order.status === 'out_for_delivery' && (
-                    <option value="out_for_delivery" disabled>Out for delivery</option>
-                  )}
-                </select>
+                {(() => {
+                  const nexts = farmerNextStatuses(order.status, order.purchase_mode)
+                  // Nothing left for the farmer to do: show where it is instead
+                  // of a dropdown whose every option the server would refuse.
+                  if (nexts.length === 0) {
+                    return (
+                      <span className="text-sm text-gray-500">
+                        {FOLLOW_ON_LABELS[order.status] || 'With F2H'}
+                      </span>
+                    )
+                  }
+                  return (
+                    <select
+                      value=""
+                      onChange={(e) => e.target.value && handleStatusChange(order.id, e.target.value)}
+                      className="border rounded p-1 text-sm bg-gray-50"
+                    >
+                      {/* Placeholder, not the current status: this list is what
+                          the order can move *to*, so pre-selecting a value would
+                          show a state the order is not in. */}
+                      <option value="">Choose…</option>
+                      {nexts.map(([value, label]) => (
+                        <option key={value} value={value}>{label}</option>
+                      ))}
+                    </select>
+                  )
+                })()}
               </div>
             </div>
           ))}

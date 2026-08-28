@@ -28,6 +28,21 @@ import { paymentsAPI } from '../api'
 // take money from. Mirrors COLLECTABLE_STATUSES in backend/app/routes/payments.py.
 const COLLECTABLE = ['ready_for_pickup', 'out_for_delivery', 'cash_collected', 'completed']
 
+// Mirrors `is_collectable` on the server. `ready_for_pickup` means two different
+// things depending on who is coming for the goods, and only one of them puts a
+// paying customer in front of the farmer:
+//
+//   pickup    the customer is at the farm with cash — collectable
+//   delivery  the goods are still at the farm waiting for F2H — not
+//
+// Every order passes through that status now, so without the split the farmer
+// would be offered a "record cash" button on produce still sitting in their shed.
+const isCollectable = (order) => {
+  if (!COLLECTABLE.includes(order?.status)) return false
+  if (order.status === 'ready_for_pickup') return order.purchase_mode === 'pickup'
+  return true
+}
+
 export default function CashOnDelivery({ order, orderType, canCollect = false, onCollected }) {
   const [busy, setBusy] = useState(false)
 
@@ -36,7 +51,7 @@ export default function CashOnDelivery({ order, orderType, canCollect = false, o
 
   if (!state || state === 'not_required') return null
 
-  const collectable = canCollect && state === 'pending' && COLLECTABLE.includes(order?.status)
+  const collectable = canCollect && state === 'pending' && isCollectable(order)
 
   const record = async () => {
     // Asked before recording, not after. This is the irreversible half of a
