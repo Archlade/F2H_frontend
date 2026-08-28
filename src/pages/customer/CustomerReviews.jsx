@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { reviewsAPI, toList } from '../../api';
-import { Loader, Star, Trash2 } from 'lucide-react';
+import { requestsAPI, reviewsAPI, toList } from '../../api';
+import { Loader, Star, Trash2, PenLine } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const CustomerReviews = () => {
@@ -11,11 +11,22 @@ const CustomerReviews = () => {
   // so it matches the app, where deleting a review asks first.
   const [confirmId, setConfirmId] = useState(null);
 
-  useEffect(() => {
+  // Completed orders are the only things that may be reviewed — the server
+  // refuses anything else with NO_PURCHASE, so offering the rest would only
+  // produce a refusal. Same rule the app's review screen follows.
+  const [reviewable, setReviewable] = useState([]);
+  const [writing, setWriting] = useState(null);
+
+  const loadReviews = () =>
     reviewsAPI.list()
       .then(res => setReviews(toList(res.data)))
-      .catch(() => toast.error('Failed to load reviews'))
-      .finally(() => setLoading(false));
+      .catch(() => toast.error('Failed to load reviews'));
+
+  useEffect(() => {
+    loadReviews().finally(() => setLoading(false));
+    requestsAPI.list({ status: 'completed', per_page: 50 })
+      .then(res => setReviewable(toList(res.data)))
+      .catch(() => setReviewable([]));
   }, []);
 
   const handleDelete = async (id) => {
@@ -38,6 +49,45 @@ const CustomerReviews = () => {
         <h1 className="text-2xl font-bold">My Reviews</h1>
       </div>
 
+      {/* The website could read and delete reviews but never write one — the
+          only way to rate anything was the app. */}
+      {reviewable.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold mb-1">Rate what you have received</h2>
+          <p className="text-sm text-gray-500 mb-3">
+            {reviewable.length} completed order{reviewable.length === 1 ? '' : 's'}
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {reviewable.map(order => (
+              <div key={order.id} className="card p-4 border rounded-lg bg-white">
+                <div className="flex items-center justify-between gap-3">
+                  <div style={{ minWidth: 0 }}>
+                    <div className="font-semibold">
+                      {order.product?.name || `Order #${order.id}`}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {order.farmer?.farm_name || 'Farm'}
+                    </div>
+                  </div>
+                  <button className="btn btn-secondary btn-sm"
+                          onClick={() => setWriting(order)}>
+                    <PenLine size={14} /> Review
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {writing && (
+        <ReviewForm
+          order={writing}
+          onClose={() => setWriting(null)}
+          onSaved={() => { setWriting(null); loadReviews(); }}
+        />
+      )}
+
       {loading ? (
         <div className="flex justify-center p-12"><Loader className="animate-spin" /></div>
       ) : reviews.length === 0 ? (
@@ -51,7 +101,9 @@ const CustomerReviews = () => {
           {reviews.map(review => (
             <div key={review.id} className="card p-5 border rounded-lg bg-white shadow-sm">
               <div className="flex justify-between items-start mb-3">
-                <h3 className="font-semibold text-lg">{review.product_name || review.farmer_name}</h3>
+                <h3 className="font-semibold text-lg">
+                  {review.product?.name || review.farmer?.name || 'Review'}
+                </h3>
                 <div className="flex text-yellow-400">
                   {[...Array(5)].map((_, i) => (
                     <Star key={i} size={16} fill={i < review.rating ? 'currentColor' : 'none'} />
@@ -101,5 +153,102 @@ const CustomerReviews = () => {
     </div>
   );
 };
+
+/**
+ * Write or replace a review for one completed order.
+ *
+ * The server replaces an earlier review of the same product or farm rather than
+ * refusing a second one, so there is no "already reviewed" state to handle here.
+ *
+ * Only the ids travel. The rating and text are the whole payload — nothing about
+ * the order's price or the farmer's identity is taken from the client, because
+ * the server already knows all of it from `product_id`.
+ */
+function ReviewForm({ order, onClose, onSaved }) {
+  const [rating, setRating] = useState(5);
+  const [reviewFarm, setReviewFarm] = useState(false);
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await reviewsAPI.create({
+        rating,
+        // No `request_id`. The server finds the qualifying purchase itself and
+        // ignores a client-supplied one, so sending it would suggest it matters.
+        product_id: reviewFarm ? undefined : order.product?.id,
+        farmer_id: reviewFarm ? order.farmer?.id : undefined,
+        title: title.trim(),
+        content: content.trim(),
+      });
+      toast.success('Thanks for the review');
+      onSaved();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Could not save that review');
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal modal-bottom-sheet" style={{ maxWidth: 480 }}>
+        <div className="modal-header">
+          <h3 className="text-h4">Write a review</h3>
+          <button className="btn btn-ghost btn-icon touch-target" onClick={onClose} aria-label="Close">✕</button>
+        </div>
+        <form onSubmit={submit}>
+          <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="text-sm text-gray-600">
+              {reviewFarm
+                ? (order.farmer?.farm_name || 'This farm')
+                : (order.product?.name || `Order #${order.id}`)}
+            </div>
+
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map(n => (
+                <button key={n} type="button" onClick={() => setRating(n)}
+                        aria-label={`${n} star${n === 1 ? '' : 's'}`}
+                        className="btn btn-ghost btn-icon">
+                  <Star size={22}
+                        className={n <= rating ? 'text-yellow-400' : 'text-gray-300'}
+                        fill={n <= rating ? 'currentColor' : 'none'} />
+                </button>
+              ))}
+            </div>
+
+            {order.farmer?.id && (
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={reviewFarm}
+                       onChange={(e) => setReviewFarm(e.target.checked)} />
+                Review the farm instead of the product
+              </label>
+            )}
+
+            <div className="form-group">
+              <label className="form-label">Title (optional)</label>
+              <input className="form-input" value={title} maxLength={255}
+                     onChange={(e) => setTitle(e.target.value)}
+                     placeholder="Sweet and fresh" />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Your review</label>
+              <textarea className="form-input" rows={4} value={content}
+                        onChange={(e) => setContent(e.target.value)}
+                        placeholder="How was it?" />
+            </div>
+
+            <button className="btn btn-primary btn-lg" type="submit" disabled={saving}>
+              {saving ? 'Saving…' : 'Post review'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 export default CustomerReviews;

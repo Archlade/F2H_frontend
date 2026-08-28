@@ -87,7 +87,14 @@ export default function Navbar() {
           <NavLink to="/how-it-works" className={({ isActive }) => `navbar__link ${isActive ? 'active' : ''}`}>
             How It Works
           </NavLink>
-          {user?.role === 'customer' && (
+          {/* Any signed-in account, not just customers.
+
+              Farmers buy from each other and admins may buy too — the server has
+              no role check on the cart or the request endpoints, and
+              `ProductCard` already offers them an Add to cart button. Gated on
+              `role === 'customer'`, this let a farmer or an admin fill a cart
+              from the product grid and then gave them no way to open it. */}
+          {user && (
             <NavLink to="/cart" className={({ isActive }) => `navbar__link ${isActive ? 'active' : ''}`}
                      style={{ position: 'relative' }}>
               <ShoppingCart size={16} style={{ marginRight: 4, verticalAlign: -2 }} />
@@ -263,6 +270,25 @@ export default function Navbar() {
               {user ? (
                 <>
                   <div className="divider" />
+
+                  {/* The drawer had no cart entry at all, so on a phone browser
+                      the cart was unreachable from the navigation for everyone
+                      — the desktop bar has had one all along. The count is
+                      carried here too; a cart you cannot see the size of is a
+                      cart you forget you filled. */}
+                  <NavLink to="/cart" className="navbar__mobile-link" onClick={() => setMenuOpen(false)}>
+                    <ShoppingCart size={18} /> Cart
+                    {cart.count > 0 && (
+                      <span style={{
+                        marginLeft: 8,
+                        background: 'var(--color-primary-600)', color: '#fff',
+                        borderRadius: 999, fontSize: 11, fontWeight: 700,
+                        minWidth: 18, height: 18, lineHeight: '18px',
+                        textAlign: 'center', padding: '0 5px', display: 'inline-block',
+                      }}>{cart.count}</span>
+                    )}
+                  </NavLink>
+
                   <NavLink to={dashboardLink} className="navbar__mobile-link highlight" onClick={() => setMenuOpen(false)}>
                     <LayoutDashboard size={18} /> My Dashboard
                   </NavLink>

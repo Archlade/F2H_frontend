@@ -80,7 +80,7 @@ const FarmerDashboard = () => {
                 {stats.recent_requests.map(req => (
                   <li key={req.id} className="flex-between" style={{ padding: '14px 20px', borderBottom: '1px solid var(--color-gray-50)' }}>
                     <div>
-                      <p className="font-semibold text-dark" style={{ fontSize: '0.9375rem', marginBottom: 2 }}>{req.product_name}</p>
+                      <p className="font-semibold text-dark" style={{ fontSize: '0.9375rem', marginBottom: 2 }}>{req.product?.name || `Order #${req.id}`}</p>
                       <p className="text-sm text-muted">Qty: {req.quantity}</p>
                     </div>
                     <span className={`badge status-${req.status} capitalize`}>{req.status}</span>

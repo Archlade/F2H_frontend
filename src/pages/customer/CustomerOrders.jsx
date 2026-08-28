@@ -61,7 +61,7 @@ const CustomerOrders = () => {
             <div key={order.id} className="card border rounded-lg p-6">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="font-semibold text-lg">{order.product_name}</h3>
+                  <h3 className="font-semibold text-lg">{order.product?.name || `Order #${order.id}`}</h3>
                   <p className="text-sm text-gray-500">Order #{order.id} • {new Date(order.created_at).toLocaleDateString()}</p>
                 </div>
                 <div className="text-right">

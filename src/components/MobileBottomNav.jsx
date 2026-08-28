@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   Home, ShoppingBag, FileText, MessageCircle, User,
-  LayoutDashboard, Tractor, Shield, Bell, Plus
+  LayoutDashboard, Tractor, Shield, Bell, Plus, ShoppingCart
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
@@ -37,6 +37,12 @@ export default function MobileBottomNav() {
     navItems = [
       { to: '/', label: 'Home', icon: Home, end: true },
       { to: '/products', label: 'Shop', icon: ShoppingBag },
+      // The cart, at thumb height. There was no route to it from the bottom bar
+      // at all — a customer shopping on a phone had to open the hamburger or go
+      // back through a product page. Only on the customer row: the farmer and
+      // admin rows are already at five and six items, and they reach the cart
+      // from the drawer.
+      { to: '/cart', label: 'Cart', icon: ShoppingCart },
       { to: '/dashboard/requests', label: 'Requests', icon: FileText },
       { to: '/dashboard', label: 'Account', icon: User },
     ]

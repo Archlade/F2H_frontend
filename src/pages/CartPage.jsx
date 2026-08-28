@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { AlertTriangle, Loader, Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-import { locationsAPI, toList } from '../api'
+import { locationsAPI, requestsAPI, toList } from '../api'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { basketPaths } from '../utils/basketPaths'
@@ -116,6 +116,12 @@ export default function CartPage() {
           Add some produce and it will show up here.
         </p>
         <Link to="/products" className="btn btn-primary">Browse produce</Link>
+
+        {/* Shown on the empty cart too. An empty cart is the most likely moment
+            somebody is looking for what they bought last time. */}
+        <div style={{ textAlign: 'left', maxWidth: 860, margin: '0 auto' }}>
+          <PurchaseHistory signedIn={!!user} />
+        </div>
       </div>
     )
   }
@@ -280,6 +286,83 @@ export default function CartPage() {
         >
           {placing ? 'Placing…' : `Place order · ₹${payable.toFixed(2)}`}
         </button>
+      </div>
+
+      <PurchaseHistory signedIn={!!user} />
+    </div>
+  )
+}
+
+/**
+ * Everything this customer has already bought, under the cart.
+ *
+ * Its own component with its own fetch, so a slow or failing history never
+ * delays the cart or blocks checkout — the cart is the job, this is reference.
+ *
+ * Asks the server for `past_orders` rather than pulling every order and
+ * filtering here: page one of "all orders" can be entirely active, which would
+ * render an empty history under a customer who has bought from us for a year.
+ *
+ * Cancelled and rejected orders are included, not only completed ones. Hiding
+ * finished orders is exactly how they became invisible on the orders page, and
+ * "why did that one never arrive" is the question this section exists to answer.
+ */
+function PurchaseHistory({ signedIn }) {
+  const [orders, setOrders] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!signedIn) { setLoading(false); return }
+    // `live` guards against setting state after the page has been left, which
+    // is easy to do here — the cart is a page people bounce off quickly.
+    let live = true
+    requestsAPI.list({ status: 'past_orders', per_page: 50 })
+      .then(res => { if (live) setOrders(toList(res.data)) })
+      .catch(() => { if (live) setOrders([]) })
+      .finally(() => { if (live) setLoading(false) })
+    return () => { live = false }
+  }, [signedIn])
+
+  if (!signedIn || loading || orders.length === 0) return null
+
+  return (
+    <div style={{ marginTop: 32 }}>
+      <h2 className="text-h4" style={{ marginBottom: 4 }}>Purchase history</h2>
+      <p className="text-sm text-muted" style={{ marginBottom: 14 }}>
+        {orders.length} past order{orders.length === 1 ? '' : 's'}
+      </p>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {orders.map(o => (
+          <div key={o.id} className="card"
+               style={{ padding: 12, borderRadius: 'var(--radius-lg)' }}>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div style={{ minWidth: 0 }}>
+                {/* `product` and `farmer` are nested objects in the payload,
+                    not flat `product_name` / `farmer_name` fields. Reading the
+                    flat names gives undefined on every row — a list of
+                    "Order #12" with no farm and no unit. */}
+                <div className="font-semibold" style={{ fontSize: '0.9375rem' }}>
+                  {o.product?.name || `Order #${o.id}`}
+                </div>
+                <div className="text-xs text-muted">
+                  {o.quantity ? `${o.quantity}${o.product?.unit ? ` ${o.product.unit}` : ''} · ` : ''}
+                  {o.created_at ? new Date(o.created_at).toLocaleDateString() : ''}
+                  {o.farmer?.farm_name ? ` · ${o.farmer.farm_name}` : ''}
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="font-bold">₹{Number(o.total_price || 0).toFixed(2)}</span>
+                <span className={`badge ${o.status === 'completed' ? 'badge-success' : 'badge-gray'}`}>
+                  {o.status === 'completed' ? 'Delivered'
+                    : o.status === 'cancelled' ? 'Cancelled'
+                    : o.status === 'rejected' ? 'Declined'
+                    : o.status}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )

@@ -55,7 +55,7 @@ const CustomerRequests = ({ side, title = 'Purchase Requests' }) => {
     // `confirm` rather than a styled modal, deliberately: this is the one
     // irreversible thing on the page, and there is no undo on the other side.
     const ok = window.confirm(
-      `Cancel your order for ${req.product_name}?\n\n` +
+      `Cancel your order for ${req.product?.name || `order #${req.id}`}?\n\n` +
       'This cannot be undone. You would need to place a new order.'
     );
     if (!ok) return;
@@ -119,7 +119,7 @@ const CustomerRequests = ({ side, title = 'Purchase Requests' }) => {
             <tbody>
               {requests.map(req => (
                 <tr key={req.id} className="border-b hover:bg-gray-50">
-                  <td className="p-3 font-medium" data-label="Product">{req.product_name}</td>
+                  <td className="p-3 font-medium" data-label="Product">{req.product?.name || `Order #${req.id}`}</td>
                   <td className="p-3" data-label="Quantity">{req.quantity}</td>
                   <td className="p-3" data-label="Total Price">
                     <OrderPrice order={req} size="sm" />

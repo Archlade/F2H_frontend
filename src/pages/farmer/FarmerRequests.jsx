@@ -76,8 +76,8 @@ const FarmerRequests = () => {
             <tbody className="divide-y">
               {requests.map(req => (
                 <tr key={req.id} className="hover:bg-gray-50">
-                  <td className="p-4 font-medium" data-label="Customer">{req.customer_name}</td>
-                  <td className="p-4" data-label="Product">{req.product_name}</td>
+                  <td className="p-4 font-medium" data-label="Customer">{req.customer?.full_name || 'Customer'}</td>
+                  <td className="p-4" data-label="Product">{req.product?.name || `Order #${req.id}`}</td>
                   <td className="p-4" data-label="Qty">{req.quantity}</td>
                   <td className="p-4" data-label="Total"><OrderPrice order={req} size="sm" /></td>
                   <td className="p-4 capitalize" data-label="Mode">{req.purchase_mode}</td>

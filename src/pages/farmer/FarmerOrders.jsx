@@ -96,7 +96,7 @@ const FarmerOrders = () => {
               <div className="flex justify-between items-start mb-3 border-b pb-3">
                 <div>
                   <h3 className="font-bold text-lg">Order #{order.id}</h3>
-                  <p className="text-sm text-gray-500">{order.customer_name}</p>
+                  <p className="text-sm text-gray-500">{order.customer?.full_name || 'Customer'}</p>
                 </div>
                 <div className="text-right">
                   <span className={`badge status-${order.status} capitalize text-xs px-2 py-1 rounded`}>{order.status.replace(/_/g, ' ')}</span>
@@ -104,7 +104,7 @@ const FarmerOrders = () => {
               </div>
               
               <div className="mb-4 flex-1">
-                <p className="font-medium">{order.product_name}</p>
+                <p className="font-medium">{order.product?.name || `Order #${order.id}`}</p>
                 <div className="text-gray-600">Qty: {order.quantity}</div>
                 <OrderPrice order={order} />
                 <p className="text-sm text-gray-500 mt-2">Mode: <span className="capitalize font-medium text-gray-700">{order.purchase_mode}</span></p>
