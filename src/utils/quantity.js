@@ -25,10 +25,12 @@
 
 const DISCRETE_UNITS = new Set(['piece', 'bundle', 'dozen', 'box'])
 
+// Declared in the order the `products.unit` enum does, because UNIT_OPTIONS
+// takes its dropdown order from these keys and the app lists ProductUnit.values.
 const UNIT_STEP = {
   kg: 0.5,
-  litre: 0.5,
   gram: 50,
+  litre: 0.5,
   ml: 50,
   piece: 1,
   bundle: 1,
@@ -52,6 +54,25 @@ const UNIT_LABEL = { gram: 'g', litre: 'L' }
 
 /** How a unit is written to a customer: "250 g", not "250 gram". */
 export const unitLabel = (unit) => UNIT_LABEL[unit] || unit || ''
+
+/**
+ * Every unit a product may be sold in, for a dropdown.
+ *
+ * `value` is what the database accepts; `label` is what a person reads. The two
+ * were conflated in three separate hardcoded lists — the farmer product form,
+ * the admin basket-item form and its app equivalent — each of which offered
+ * `g`, `bunch` and `packet` as *values*. None of those is in the
+ * `products.unit` enum, so picking one came back as "'g' is not a unit we
+ * support" after the farmer had filled in the whole form. `lb` was on the
+ * farmer form too, and has never existed anywhere else.
+ *
+ * Derived from the step table rather than typed out again, so a unit added to
+ * the schema has exactly one place to be added here.
+ */
+export const UNIT_OPTIONS = Object.keys(UNIT_STEP).map((value) => ({
+  value,
+  label: unitLabel(value),
+}))
 
 /** A finite number, or null — `Number('')` is 0 and `Number('abc')` is NaN. */
 export function toNumber(value) {

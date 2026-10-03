@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 
 import { adminAPI, categoriesAPI, toList, uploadsAPI } from '../../api'
 import { IMAGE_ACCEPT, MAX_UPLOAD_MB, isProbablyImage, mediaUrl, prepareImagesForUpload } from '../../utils/image'
+import { UNIT_OPTIONS } from '../../utils/quantity'
 
 /**
  * The produce F2H sells inside a weekly basket.
@@ -31,7 +32,10 @@ const MAX_IMAGES = 5
 // The units produce is actually sold in here. A free-text box produced "Kg",
 // "kg", "KG" and "kilo" in the same catalogue, and the basket builder shows
 // whatever is stored.
-const UNITS = ['kg', 'g', 'litre', 'ml', 'piece', 'bunch', 'dozen', 'packet']
+// Was `['kg', 'g', 'litre', 'ml', 'piece', 'bunch', 'dozen', 'packet']`, which
+// listed four values the `products.unit` enum does not accept and omitted
+// `bundle` and `box`, which it does. `UNIT_OPTIONS` keeps the readable label
+// and the stored value apart and comes from one table in `utils/quantity`.
 
 export default function BasketItems() {
   const [items, setItems] = useState([])
@@ -228,7 +232,9 @@ export default function BasketItems() {
               <label className="form-label" htmlFor="bi-unit">Unit</label>
               <select id="bi-unit" className="form-input touch-target" value={form.unit}
                       onChange={(e) => setForm({ ...form, unit: e.target.value })}>
-                {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+                {UNIT_OPTIONS.map(({ value, label }) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
               </select>
             </div>
 

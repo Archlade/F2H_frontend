@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Loader, Upload, X } from 'lucide-react';
 import { MAX_UPLOAD_MB, isProbablyImage, prepareImagesForUpload, IMAGE_ACCEPT, mediaUrl } from '../../utils/image';
+import { UNIT_OPTIONS } from '../../utils/quantity'
 
 const FarmerProductForm = () => {
   const { id } = useParams();
@@ -133,20 +134,18 @@ const FarmerProductForm = () => {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Unit *</label>
+              {/* From the schema, not typed out here.
+                  This list offered `g`, `lb`, `bunch` and `packet` as option
+                  *values*, and the `products.unit` enum accepts none of them —
+                  so choosing grams came back as "'g' is not a unit we support"
+                  once the whole form had been filled in. The label a farmer
+                  reads ("g") and the value the database takes ("gram") are two
+                  different things, and conflating them is what broke four of
+                  the ten choices. */}
               <select name="unit" value={formData.unit} onChange={handleChange} className="w-full border p-2 rounded">
-                {/* Same list the basket-item form uses. Milk, honey, oils and
-                    juices had no unit that fitted — the closest was "piece",
-                    which prices a litre of honey as one object. */}
-                <option value="kg">kg</option>
-                <option value="g">g</option>
-                <option value="litre">litre</option>
-                <option value="ml">ml</option>
-                <option value="lb">lb</option>
-                <option value="piece">piece</option>
-                <option value="bunch">bunch</option>
-                <option value="dozen">dozen</option>
-                <option value="packet">packet</option>
-                <option value="box">box</option>
+                {UNIT_OPTIONS.map(({ value, label }) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
               </select>
             </div>
             <div>
