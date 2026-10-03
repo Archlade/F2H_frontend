@@ -6,6 +6,7 @@ import { useCart } from '../context/CartContext'
 import { favoritesAPI } from '../api'
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
+import { minQuantity } from '../utils/quantity'
 
 export default function ProductCard({ product, showDistance = true, compact = false }) {
   const { isAuthenticated, user } = useAuth()
@@ -48,7 +49,11 @@ export default function ProductCard({ product, showDistance = true, compact = fa
 
     setAdding(true)
     try {
-      await addItem(product.id, Number(product.min_quantity) || 1)
+      // `minQuantity`, not the raw column: a countable unit rounds a
+      // fractional minimum up to a whole one, and a listing with no minimum
+      // recorded falls back to one step rather than to 1 of whatever the unit
+      // is — 1 g of greens is not an order.
+      await addItem(product.id, minQuantity(product))
       toast.success(`${product.name} added to cart`)
     } catch (err) {
       toast.error(err.response?.data?.error || 'Could not add to cart')
@@ -180,9 +185,9 @@ export default function ProductCard({ product, showDistance = true, compact = fa
             ₹300 minimum is meant to be filled with several things, and that is
             four navigations per item.
 
-            Adds the product's minimum quantity, which is the smallest orderable
-            amount and the sane default for one tap. Anyone wanting more opens
-            the product and uses the stepper. */}
+            Adds the product's minimum orderable quantity, which is the sane
+            default for one tap. Anyone wanting more opens the product, where
+            the stepper now sits on the page itself. */}
         {canBuy && (
           <button
             type="button"

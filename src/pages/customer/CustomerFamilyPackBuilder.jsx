@@ -12,6 +12,7 @@ import {
 import CouponField from '../../components/CouponField'
 import { useAuth } from '../../context/AuthContext'
 import { basketPaths } from '../../utils/basketPaths'
+import { formatQuantity, minQuantity, round3, stepFor, unitLabel } from '../../utils/quantity'
 
 const WEEKDAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday',
   'Friday', 'Saturday', 'Sunday']
@@ -137,8 +138,10 @@ export default function CustomerFamilyPackBuilder() {
   const setQty = (productId, qty, minQty = 0) => {
     setBasket(prev => {
       const next = { ...prev }
-      if (qty <= 0 || qty < minQty) delete next[productId]
-      else next[productId] = Number(qty.toFixed(2))
+      // A thousandth, matching the NUMERIC(10,3) column it is bound for. Two
+      // decimals here silently rounded a 0.125 kg step.
+      if (qty <= 0 || qty < minQty - 1e-6) delete next[productId]
+      else next[productId] = round3(qty)
       return next
     })
   }
@@ -270,18 +273,22 @@ export default function CustomerFamilyPackBuilder() {
 
                       <div className="fp-product-card__qty-pill">
                         {/* Stepping below the minimum drops the item; adding
-                            starts at the minimum rather than at 1. */}
+                            starts at the minimum rather than at 1.
+
+                            The step comes from the product's unit rather than
+                            being a flat 1, which moved a 250 g listing one gram
+                            per press and a 20 kg one a single kilo. */}
                         <button type="button" className="fp-product-card__qty-btn"
-                                onClick={() => setQty(p.id, qty - 1, Number(p.min_quantity || 0))}
+                                onClick={() => setQty(p.id, qty - stepFor(p), minQuantity(p))}
                                 disabled={qty <= 0}>
                           <Minus size={14} />
                         </button>
-                        <span>{qty} {p.unit}</span>
+                        <span>{formatQuantity(qty)} {unitLabel(p.unit)}</span>
                         <button type="button" className="fp-product-card__qty-btn"
                                 onClick={() => setQty(
                                   p.id,
-                                  qty === 0 ? Number(p.min_quantity || 1) : qty + 1,
-                                  Number(p.min_quantity || 0),
+                                  qty === 0 ? minQuantity(p) : qty + stepFor(p),
+                                  minQuantity(p),
                                 )}>
                           <Plus size={14} />
                         </button>

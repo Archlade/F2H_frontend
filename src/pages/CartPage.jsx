@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { AlertTriangle, Loader, Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react'
+import { AlertTriangle, Loader, ShoppingCart, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 import { locationsAPI, requestsAPI, toList } from '../api'
+import QuantityStepper from '../components/QuantityStepper'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { basketPaths } from '../utils/basketPaths'
 import { ordersLandingFor } from '../utils/roleHome'
 import { useSeo } from '../utils/seo'
+import { formatQuantity, quantityHint, unitLabel } from '../utils/quantity'
 
 /**
  * The cart, and checking out.
@@ -145,25 +147,25 @@ export default function CartPage() {
                 </div>
               </div>
 
-              <div className="fp-product-card__qty-pill">
-                <button
-                  type="button"
-                  className="fp-product-card__qty-btn"
-                  onClick={() => changeQuantity(item.id, item.quantity - 0.5)}
-                  aria-label="Reduce quantity"
-                >
-                  <Minus size={14} />
-                </button>
-                <span>{item.quantity} {item.product?.unit}</span>
-                <button
-                  type="button"
-                  className="fp-product-card__qty-btn"
-                  onClick={() => changeQuantity(item.id, item.quantity + 0.5)}
-                  aria-label="Increase quantity"
-                >
-                  <Plus size={14} />
-                </button>
-              </div>
+              {/* Steps by whatever this product is sold in, not by a
+                  hardcoded 0.5 — which is what offered half a coconut here and
+                  moved a 250 g listing half a gram at a time.
+
+                  `allowBelowMin` keeps the minus key live *at* the minimum so
+                  the press is answered with the reason and a pointer at the
+                  bin, rather than being a dead key that explains nothing. The
+                  server's BELOW_MIN_QUANTITY reply carries that wording. */}
+              <QuantityStepper
+                product={item.product}
+                value={item.quantity}
+                compact
+                allowBelowMin
+                onChange={(quantity) => changeQuantity(item.id, quantity)}
+                onSnap={(snapped) => toast(
+                  `Adjusted to ${formatQuantity(snapped)} `
+                  + `${unitLabel(item.product?.unit)}`,
+                )}
+              />
 
               <div style={{ minWidth: 82, textAlign: 'right' }} className="font-extrabold text-dark">
                 ₹{Number(item.line_total).toFixed(2)}
@@ -178,6 +180,12 @@ export default function CartPage() {
                 <Trash2 size={15} />
               </button>
             </div>
+
+            {item.product && (
+              <p className="text-xs text-muted" style={{ marginTop: 6 }}>
+                {quantityHint(item.product)}
+              </p>
+            )}
 
             {item.problem && (
               <div className="flex items-center gap-2 text-xs" style={{

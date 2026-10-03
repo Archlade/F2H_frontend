@@ -3,15 +3,17 @@ import { mediaUrl } from '../utils/image'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Star, MapPin, Truck, Package, Heart, BadgeCheck,
-  ShoppingBag, Minus, Plus, MessageCircle, AlertCircle, CheckCircle,
+  ShoppingBag, MessageCircle, AlertCircle, CheckCircle,
   ChevronLeft, ChevronRight, ShoppingCart
 } from 'lucide-react'
 import { productsAPI, requestsAPI, locationsAPI, reviewsAPI, favoritesAPI } from '../api'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import CouponField, { OrderTotals } from '../components/CouponField'
+import QuantityStepper from '../components/QuantityStepper'
 import toast from 'react-hot-toast'
 import { useSeo, useJsonLd, absoluteUrl } from '../utils/seo'
+import { formatQuantity, minQuantity, quantityHint, unitLabel, withUnit } from '../utils/quantity'
 
 export default function ProductDetailPage() {
   const { id } = useParams()
@@ -27,7 +29,9 @@ export default function ProductDetailPage() {
   const [currentImage, setCurrentImage] = useState(0)
 
   const [requestForm, setRequestForm] = useState({
-    quantity: 1,
+    // Replaced with the product's own minimum as soon as it loads. A listing
+    // sold from 250 g must never open at 1.
+    quantity: 0,
     purchase_mode: 'delivery',
     delivery_address_id: '',
     delivery_notes: '',
@@ -131,7 +135,10 @@ export default function ProductDetailPage() {
         ])
         setProduct(prodRes.data)
         setReviews(revRes.data.items || [])
-        setRequestForm((f) => ({ ...f, quantity: Number(prodRes.data.min_quantity) }))
+        // `minQuantity`, not the raw column: a countable unit rounds a
+        // fractional minimum up to a whole one, since half a box is not an
+        // amount anybody can hand over.
+        setRequestForm((f) => ({ ...f, quantity: minQuantity(prodRes.data) }))
 
         if (isAuthenticated) {
           const [addrRes, favRes] = await Promise.all([
@@ -165,9 +172,12 @@ export default function ProductDetailPage() {
   // page — the only way in was the Request form, which is a different purchase
   // with different rules.
   //
-  // Sends the quantity chosen in the Request form when there is one, otherwise
-  // the farmer's minimum. The amount is adjustable in the cart, which the toast
-  // says, because silently adding an amount nobody picked is the confusing part.
+  // Sends the amount showing in the stepper above the buttons.
+  //
+  // It used to send `requestForm.quantity` while that lived *inside* the Request
+  // modal, so the figure it added was one the customer could not see from the
+  // page: opening the modal, setting 5 kg, closing it and tapping "Add to cart"
+  // quietly added 5. The stepper is on the page now and both buttons read it.
   const handleAddToCart = async () => {
     if (!isAuthenticated) { navigate('/auth?mode=login'); return }
     // Only your own listing is refused — the same rule the server applies.
@@ -176,9 +186,9 @@ export default function ProductDetailPage() {
 
     setAddingToCart(true)
     try {
-      const qty = Number(requestForm.quantity) || Number(product.min_quantity) || 1
+      const qty = Number(requestForm.quantity) || minQuantity(product)
       await addItem(product.id, qty)
-      toast.success(`Added ${qty} ${product.unit} — change the amount in your cart`)
+      toast.success(`Added ${withUnit(qty, product.unit)} — change the amount in your cart`)
     } catch (err) {
       toast.error(err.response?.data?.error || 'Could not add to cart')
     } finally {
@@ -410,6 +420,35 @@ export default function ProductDetailPage() {
             <p className="text-body text-muted" style={{ lineHeight: 1.7 }}>{product.description}</p>
           )}
 
+          {/* How much.
+              This lived only inside the Request modal, which left "Add to cart"
+              sending a quantity nobody could see and no way to buy 2 kg without
+              opening a form about delivery addresses. Both buttons below read
+              it, and the rule under it is stated rather than discovered by
+              pressing a key that refuses to move. */}
+          {product.stock_status !== 'out_of_stock' && (
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">Quantity</label>
+              <div className="flex items-center gap-3 flex-wrap">
+                <QuantityStepper
+                  product={product}
+                  value={requestForm.quantity}
+                  onChange={(quantity) => setRequestForm((f) => ({ ...f, quantity }))}
+                  onSnap={(snapped) => toast(
+                    `${product.name} is sold in amounts of `
+                    + `${formatQuantity(snapped)} ${unitLabel(product.unit)} — adjusted for you`,
+                  )}
+                />
+                <span className="text-sm text-muted">
+                  = ₹{(product.effective_price * requestForm.quantity).toFixed(2)}
+                </span>
+              </div>
+              <p className="text-xs text-muted" style={{ marginTop: 6 }}>
+                {quantityHint(product)}
+              </p>
+            </div>
+          )}
+
           {/* Favorite + Request (Desktop / Tablet view) */}
           <div className="flex gap-3 product-detail-actions-desktop">
             <button
@@ -508,28 +547,28 @@ export default function ProductDetailPage() {
                   </div>
                 </div>
 
-                {/* Quantity */}
+                {/* Quantity.
+                    The same stepper and the same amount as the page behind this
+                    sheet, so opening the form never changes what was chosen.
+                    What was here stepped by a hardcoded 0.5 for every unit and
+                    clamped silently with Math.max/Math.min, which made the key
+                    look dead at the bounds and offered half a coconut in
+                    between. */}
                 <div className="form-group">
-                  <label className="form-label">Quantity ({product.unit})</label>
-                  <div className="flex items-center gap-3">
-                    <button type="button" className="btn btn-secondary btn-icon touch-target"
-                      onClick={() => setRequestForm((f) => ({ ...f, quantity: Math.max(Number(product.min_quantity), f.quantity - 0.5) }))}>
-                      <Minus size={16} />
-                    </button>
-                    <input className="form-input" type="number"
-                      min={product.min_quantity} max={product.available_quantity} step="0.5"
+                  <label className="form-label">Quantity</label>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <QuantityStepper
+                      product={product}
                       value={requestForm.quantity}
-                      onChange={(e) => setRequestForm((f) => ({ ...f, quantity: Number(e.target.value) }))}
-                      style={{ textAlign: 'center', maxWidth: 100 }}
+                      onChange={(quantity) => setRequestForm((f) => ({ ...f, quantity }))}
+                      onSnap={(snapped) => toast(
+                        `Adjusted to ${formatQuantity(snapped)} ${unitLabel(product.unit)}`,
+                      )}
                     />
-                    <button type="button" className="btn btn-secondary btn-icon touch-target"
-                      onClick={() => setRequestForm((f) => ({ ...f, quantity: Math.min(Number(product.available_quantity), f.quantity + 0.5) }))}>
-                      <Plus size={16} />
-                    </button>
-                    <span className="text-sm text-muted">
-                      Max: {product.available_quantity} {product.unit}
-                    </span>
                   </div>
+                  <p className="text-xs text-muted" style={{ marginTop: 6 }}>
+                    {quantityHint(product)}
+                  </p>
                 </div>
 
                 {/* Purchase mode */}
@@ -618,7 +657,7 @@ export default function ProductDetailPage() {
 
                 {/* Summary */}
                 <div className="text-sm text-muted">
-                  {requestForm.quantity} {product.unit} × ₹{product.effective_price?.toFixed(2)}
+                  {withUnit(requestForm.quantity, product.unit)} × ₹{product.effective_price?.toFixed(2)}
                 </div>
                 <OrderTotals
                   subtotal={subtotal}
