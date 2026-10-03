@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { farmersAPI, locationsAPI, authAPI } from '../../api';
+import { farmersAPI, authAPI } from '../../api';
 import AvatarUpload from '../../components/AvatarUpload';
+import FarmLocationFields from '../../components/FarmLocationFields';
+import { EMPTY_FARM_LOCATION, farmLocationProblems } from '../../utils/validators';
 import toast from 'react-hot-toast';
-import { MapPin } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 
 const FarmerProfile = () => {
   const { user, refetch } = useAuth();
@@ -15,23 +17,32 @@ const FarmerProfile = () => {
     farming_type: user?.farmer_profile?.farming_type || 'conventional',
     years_farming: user?.farmer_profile?.years_farming || '',
     avatar_url: user?.farmer_profile?.avatar_url || user?.avatar_url || '',
-    latitude: '', longitude: ''
   });
+
+  // Seeded from the profile the server sent.
+  //
+  // `farmer_profile.location` is new: `/auth/me` used to return a profile with
+  // no location in it at all, so this screen had nothing to show and opened
+  // with two empty coordinate boxes however long ago the farm was pinned.
+  const saved = user?.farmer_profile?.location;
+  const [location, setLocation] = useState({
+    ...EMPTY_FARM_LOCATION,
+    address_line1: saved?.address_line1 || '',
+    city: saved?.city || '',
+    state: saved?.state || '',
+    postal_code: saved?.postal_code || '',
+    latitude: saved?.latitude ?? '',
+    longitude: saved?.longitude ?? '',
+  });
+  const [locationErrors, setLocationErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
-  const handleChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
+  // True for a farm that has never had a readable address — including the ones
+  // pinned by the old version of this screen, which saved coordinates and
+  // nothing else. Those are exactly the farms the listing guard now stops.
+  const incomplete = Object.keys(farmLocationProblems(location)).length > 0;
 
-  const getLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setFormData(prev => ({ ...prev, latitude: position.coords.latitude, longitude: position.coords.longitude }));
-          toast.success('Location acquired');
-        },
-        () => toast.error('Geolocation failed')
-      );
-    }
-  };
+  const handleChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   // Saved immediately on pick. The same image is stored on the account so it
   // shows in the navbar, and on the farm profile so it shows on listings.
@@ -49,52 +60,30 @@ const FarmerProfile = () => {
     }
   };
 
-  /**
-   * Where the farm is.
-   *
-   * A *location*, not a delivery address. This used to POST the coordinates to
-   * `/locations/addresses`, which was wrong twice over:
-   *
-   *  - Nothing read them. The farm pin on a farm's page, and the distance shown
-   *    on every product and farmer listing, all come from a `Location` row with
-   *    `location_type='farm'`. Coordinates saved as an Address went somewhere
-   *    nothing looks, so "farmers near you" never worked for anyone who set
-   *    their location here.
-   *  - It added a fake "Farm Coordinates" entry to the farmer's own delivery
-   *    addresses, which is where their shopping goes.
-   *
-   * It also started failing outright once addresses began requiring a city,
-   * state and PIN — a bare latitude and longitude has none of those. That error
-   * is what surfaced this; the silent half had been broken far longer.
-   */
-  const saveFarmLocation = async () => {
-    if (!formData.latitude || !formData.longitude) return;
 
-    const payload = {
-      location_type: 'farm',
-      label: 'Farm',
-      latitude: Number(formData.latitude),
-      longitude: Number(formData.longitude),
-      is_primary: true,
-    };
-
-    // Updated in place when one already exists. Posting every time would leave
-    // a trail of old pins, and the readers all take `.first()` — so the farm
-    // would keep showing at whichever one happened to be found first.
-    const { data } = await locationsAPI.list();
-    const existing = (Array.isArray(data) ? data : data?.items || [])
-      .find(l => l.location_type === 'farm');
-
-    if (existing) await locationsAPI.update(existing.id, payload);
-    else await locationsAPI.add(payload);
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const problems = farmLocationProblems(location);
+    if (Object.keys(problems).length) {
+      setLocationErrors(problems);
+      toast.error('Please complete your farm location');
+      return;
+    }
+    setLocationErrors({});
+
     setLoading(true);
     try {
-      await farmersAPI.updateProfile(formData);
-      await saveFarmLocation();
+      // The location travels with the profile in one request.
+      //
+      // It used to be a second call to `/locations`, an endpoint that takes any
+      // `location_type` and validates nothing — and this screen sent it bare
+      // coordinates, so a farm's actual address was never saveable from the one
+      // page that asks for it. `PUT /farmers/profile` now validates and upserts
+      // the farm row itself.
+      await farmersAPI.updateProfile({ ...formData, location });
+      await refetch();
       toast.success('Profile updated');
     } catch (err) {
       // The server's message, not a generic one. "Failed to update profile"
@@ -157,22 +146,38 @@ const FarmerProfile = () => {
         </div>
 
         <div className="card bg-white p-6 rounded-lg border shadow-sm">
-          <div className="flex justify-between items-center mb-4 border-b pb-2">
-            <h2 className="text-lg font-semibold">Farm Location</h2>
-            <button type="button" onClick={getLocation} className="text-sm bg-blue-50 text-blue-600 px-3 py-1 rounded flex items-center gap-1 hover:bg-blue-100">
-              <MapPin size={14}/> Use Current Location
-            </button>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Latitude</label>
-              <input name="latitude" value={formData.latitude} onChange={handleChange} className="w-full border p-2 rounded bg-gray-50" readOnly />
+          <h2 className="text-lg font-semibold mb-4 border-b pb-2">Farm Location</h2>
+
+          {/* Said before the fields, not after a failed save. A farm whose
+              location is incomplete cannot list new produce, and the farmer is
+              owed that in plain words at the moment they can fix it. */}
+          {incomplete && (
+            <div className="flex gap-2" style={{
+              padding: 12, marginBottom: 16,
+              background: 'var(--color-accent-50, #FFFBEB)',
+              borderRadius: 'var(--radius-md)',
+              color: 'var(--color-accent-800, #92400E)',
+            }}>
+              <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
+              <span className="text-sm" style={{ fontWeight: 600 }}>
+                Your farm location is incomplete, so you cannot list new produce yet.
+                Fill in the address below and save.
+              </span>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Longitude</label>
-              <input name="longitude" value={formData.longitude} onChange={handleChange} className="w-full border p-2 rounded bg-gray-50" readOnly />
-            </div>
-          </div>
+          )}
+
+          {/* The same field group as signup — one address form, not a third
+              copy of it. What was here collected latitude and longitude only,
+              which a customer cannot read and which this page saved to an
+              endpoint nothing looked at. */}
+          <FarmLocationFields
+            value={location}
+            onChange={setLocation}
+            errors={locationErrors}
+            disabled={loading}
+            heading={null}
+            note={null}
+          />
         </div>
 
         <div className="flex justify-end">

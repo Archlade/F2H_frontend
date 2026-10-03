@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { productsAPI, categoriesAPI, uploadsAPI } from '../../api';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Loader, Upload, X } from 'lucide-react';
+import { Loader, Upload, X, MapPin } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import { MAX_UPLOAD_MB, isProbablyImage, prepareImagesForUpload, IMAGE_ACCEPT, mediaUrl } from '../../utils/image';
 import { UNIT_OPTIONS } from '../../utils/quantity'
 
@@ -10,6 +11,19 @@ const FarmerProductForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEditing = Boolean(id);
+  const { user } = useAuth();
+
+  // A farm with no readable location cannot publish new produce — the server
+  // refuses it with FARM_LOCATION_REQUIRED, and the whole point of refusing is
+  // that the listing would never rank in the distance sort customers arrive
+  // through. Shown here instead of letting someone fill in the entire form and
+  // discover it on submit.
+  //
+  // Editing stays open: a farmer correcting a price should not be sent to an
+  // address form first.
+  const needsFarmLocation = !isEditing
+    && user?.role === 'farmer'
+    && user?.farmer_profile?.has_farm_location === false;
   
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(isEditing);
@@ -98,6 +112,33 @@ const FarmerProductForm = () => {
   };
 
   if (loading) return <div className="p-12 flex justify-center"><Loader className="animate-spin" /></div>;
+
+  if (needsFarmLocation) {
+    return (
+      <div className="p-6 max-w-2xl mx-auto">
+        <h1 className="text-2xl font-bold mb-6">Add New Product</h1>
+        <div className="card bg-white p-6 rounded-lg border shadow-sm">
+          <div className="flex gap-3">
+            <MapPin size={20} color="var(--color-primary-600)" style={{ flexShrink: 0, marginTop: 2 }} />
+            <div>
+              <h2 className="text-lg font-semibold mb-2">Add your farm location first</h2>
+              <p className="text-sm text-muted mb-1">
+                Customers find farms by how close they are, and a farm without a
+                location never appears in that search — so a listing published now
+                would be invisible to most of them.
+              </p>
+              <p className="text-sm text-muted mb-4">
+                It takes a minute: the village or address, town, state and PIN code.
+              </p>
+              <Link to="/farmer/profile" className="btn btn-primary">
+                <MapPin size={15} /> Add my farm location
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-4xl mx-auto">

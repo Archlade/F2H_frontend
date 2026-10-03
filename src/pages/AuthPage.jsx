@@ -3,7 +3,10 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import { Eye, EyeOff, Leaf, ArrowRight, CheckCircle } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
-import { emailProblem, phoneProblem } from '../utils/validators'
+import {
+  EMPTY_FARM_LOCATION, emailProblem, farmLocationProblems, phoneProblem,
+} from '../utils/validators'
+import FarmLocationFields from '../components/FarmLocationFields'
 import { PASSWORD_RESET_ENABLED } from '../config/features'
 
 export default function AuthPage() {
@@ -27,6 +30,9 @@ export default function AuthPage() {
     phone: '',
     role: defaultRole,
     farm_name: '',
+    // Required for a farmer, ignored for a customer. Held here rather than in
+    // its own state so one `form` object is still what gets posted.
+    location: EMPTY_FARM_LOCATION,
   })
 
   const update = (k, v) => setForm((f) => ({ ...f, [k]: v }))
@@ -51,7 +57,16 @@ export default function AuthPage() {
 
       if (!form.first_name.trim()) e.first_name = 'First name is required'
       if (!form.last_name.trim()) e.last_name = 'Last name is required'
-      if (form.role === 'farmer' && !form.farm_name.trim()) e.farm_name = 'Farm name is required'
+      if (form.role === 'farmer') {
+        if (!form.farm_name.trim()) e.farm_name = 'Farm name is required'
+
+        // Where the farm is. Mandatory, and checked here against the same
+        // rules the server applies — including that the PIN and the state
+        // describe the same place — so a farmer finds out while the form is
+        // open rather than losing a filled-in signup to a banner.
+        const locationErrors = farmLocationProblems(form.location)
+        if (Object.keys(locationErrors).length) e.location = locationErrors
+      }
 
       // Required: it is how a farmer reaches a customer at handover.
       // Mirrors the server's phone_problem(). Was 7-15 digits, which let
@@ -220,12 +235,26 @@ export default function AuthPage() {
                 </div>
 
                 {form.role === 'farmer' && (
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="farm-name">Farm Name</label>
-                    <input id="farm-name" className="form-input" placeholder="Green Valley Farm" value={form.farm_name}
-                      onChange={(e) => update('farm_name', e.target.value)} />
-                    {errors.farm_name && <span className="form-error">{errors.farm_name}</span>}
-                  </div>
+                  <>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="farm-name">Farm Name</label>
+                      <input id="farm-name" className="form-input" placeholder="Green Valley Farm" value={form.farm_name}
+                        onChange={(e) => update('farm_name', e.target.value)} />
+                      {errors.farm_name && <span className="form-error">{errors.farm_name}</span>}
+                    </div>
+
+                    {/* Asked at signup rather than left to the profile screen.
+                        Nothing used to require it, so a farm could list produce
+                        with no pin — invisible to the distance sort most
+                        customers arrive through, with nothing to tell the
+                        farmer that was happening. */}
+                    <FarmLocationFields
+                      value={form.location}
+                      onChange={(location) => update('location', location)}
+                      errors={errors.location || {}}
+                      disabled={loading}
+                    />
+                  </>
                 )}
               </>
             )}

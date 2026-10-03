@@ -3,6 +3,8 @@ import { Leaf, X, Info, Loader2 } from 'lucide-react'
 import { authAPI } from '../api'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
+import FarmLocationFields from './FarmLocationFields'
+import { EMPTY_FARM_LOCATION, farmLocationProblems } from '../utils/validators'
 
 /**
  * "Sell as a farmer" for a customer who is already signed in.
@@ -14,9 +16,13 @@ import toast from 'react-hot-toast'
  */
 export default function BecomeFarmerModal({ open, onClose, onDone }) {
   const { refetch } = useAuth()
-  const [form, setForm] = useState({ farm_name: '', farming_type: '', bio: '' })
+  const [form, setForm] = useState({
+    farm_name: '', farming_type: '', bio: '',
+    location: EMPTY_FARM_LOCATION,
+  })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+  const [fieldErrors, setFieldErrors] = useState({})
 
   if (!open) return null
 
@@ -26,8 +32,19 @@ export default function BecomeFarmerModal({ open, onClose, onDone }) {
     e.preventDefault()
     if (!form.farm_name.trim()) { setError('Farm name is required'); return }
 
+    // The same requirement as registering as a farmer outright — an upgrade is
+    // the other door into the role, and a rule enforced on one door only is
+    // not a rule. The server refuses this too.
+    const locationErrors = farmLocationProblems(form.location)
+    if (Object.keys(locationErrors).length) {
+      setFieldErrors(locationErrors)
+      setError('Your farm location is needed before you can start selling')
+      return
+    }
+
     setSaving(true)
     setError(null)
+    setFieldErrors({})
     try {
       await authAPI.becomeFarmer(form)
       // Re-reads /auth/me so the navbar, guards and menus switch to the
@@ -92,6 +109,15 @@ export default function BecomeFarmerModal({ open, onClose, onDone }) {
                 onChange={(e) => update('farming_type', e.target.value)}
               />
             </div>
+
+            {/* Required. A farm with no location never ranks in the distance
+                sort, which is how most customers reach a farm at all. */}
+            <FarmLocationFields
+              value={form.location}
+              onChange={(location) => update('location', location)}
+              errors={fieldErrors}
+              disabled={saving}
+            />
 
             <div className="form-group">
               <label className="form-label" htmlFor="farm-bio">Short bio</label>

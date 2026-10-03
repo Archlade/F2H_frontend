@@ -150,3 +150,72 @@ export function phoneProblem(phone) {
   if (digits.length !== 10) return 'Enter a 10-digit phone number'
   return null
 }
+
+/**
+ * The shape a farm location is held in while a form is open.
+ *
+ * Exported so every screen that collects one starts from the same keys — the
+ * signup page, the become-a-farmer modal and the farm profile all post to
+ * endpoints that read exactly these.
+ */
+export const EMPTY_FARM_LOCATION = {
+  address_line1: '',
+  city: '',
+  state: '',
+  postal_code: '',
+  latitude: '',
+  longitude: '',
+}
+
+/**
+ * Per-field problems with a farm location, as `{field: message}`.
+ *
+ * Mirrors `farm_location_service.location_problem`, which is the copy that
+ * decides. The readable address is required and the coordinates are not: a
+ * farmer on a desktop, or one who declines the browser's location prompt, must
+ * still be able to finish signing up. The pin can be added later from the
+ * profile screen, and until it is, the farm simply does not rank in the
+ * distance sort.
+ *
+ * Returned per field rather than as one sentence because this is a four-box
+ * form, and a single "invalid location" leaves somebody guessing which box.
+ */
+export function farmLocationProblems(location) {
+  const loc = location || {}
+  const errors = {}
+
+  if (!(loc.address_line1 || '').trim()) {
+    errors.address_line1 = 'Farm address is required for your farm'
+  }
+  if (!(loc.city || '').trim()) {
+    errors.city = 'City or town is required for your farm'
+  }
+  if (!(loc.state || '').trim()) {
+    errors.state = 'State is required for your farm'
+  }
+  if (!(loc.postal_code || '').trim()) {
+    errors.postal_code = 'PIN code is required for your farm'
+  }
+  if (Object.keys(errors).length) return errors
+
+  // Both boxes are filled in, so now check the state, the PIN, and that the
+  // two describe the same place.
+  //
+  // The message is routed by what it is about rather than by a guess: only a
+  // complaint about the state itself belongs on the state picker. Everything
+  // else — a short PIN, an unallocated one, a PIN that belongs to another
+  // state — lands on the PIN box, which is the field to re-read. Routing a
+  // "PIN code is 6 digits" onto a dropdown is a red outline around the one
+  // control that cannot be wrong.
+  const mismatch = addressProblem(loc.state, loc.postal_code)
+  if (mismatch) {
+    const aboutTheState = /is not a state we recognise/.test(mismatch)
+      || /^State /.test(mismatch)
+    errors[aboutTheState ? 'state' : 'postal_code'] = mismatch
+  }
+  return errors
+}
+
+/** Whether a farm location is complete enough to save. */
+export const farmLocationIsValid = (location) =>
+  Object.keys(farmLocationProblems(location)).length === 0

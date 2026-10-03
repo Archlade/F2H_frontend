@@ -175,10 +175,20 @@ export default function FarmerDetailPage() {
             {fp.farm_description && <p className="text-body text-muted" style={{ lineHeight: 1.7 }}>{fp.farm_description}</p>}
 
             <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {/* The village too, not only the town.
+                  "Mettupalayam, Tamil Nadu" is a district; a customer deciding
+                  whether a farm pickup is a trip they can make needs the place.
+                  The address line is required of every farm now, so there is
+                  something to show — `filter(Boolean)` still covers the farms
+                  that predate that. */}
               {fp.location && (
-                <div className="flex items-center gap-2 text-muted text-sm">
-                  <MapPin size={15} color="var(--color-primary-600)" />
-                  {[fp.location.city, fp.location.state].filter(Boolean).join(', ')}
+                <div className="flex items-start gap-2 text-muted text-sm">
+                  <MapPin size={15} color="var(--color-primary-600)" style={{ flexShrink: 0, marginTop: 2 }} />
+                  <span>
+                    {[fp.location.address_line1, fp.location.city, fp.location.state]
+                      .filter(Boolean).join(', ')}
+                    {fp.location.postal_code ? ` — ${fp.location.postal_code}` : ''}
+                  </span>
                 </div>
               )}
               {fp.farming_type && (
